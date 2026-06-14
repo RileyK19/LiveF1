@@ -1,0 +1,15 @@
+{
+  "originHash" : "dea6bf6547ff93b1fb1d02d8fa877c567dc2c790b2434f638a9b3a3a2698d2b5",
+  "pins" : [
+    {
+      "identity" : "notificationlog",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/RileyK19/NotificationLog",
+      "state" : {
+        "branch" : "main",
+        "revision" : "3a695dc612f7276755bf797a73fe083b33b9af29"
+      }
+    }
+  ],
+  "version" : 3
+}
