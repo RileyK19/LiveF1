@@ -42,6 +42,11 @@ struct ReplayPickerView: View {
                 .padding()
             }
         }
+        .onAppear {
+            Task {
+                await loadSessions()
+            }
+        }
     }
 
     private func loadSessions() async {

@@ -17,7 +17,7 @@ struct ContentView: View {
     @AppStorage("isDark") private var isDark = false
     @State private var showingSettings = false
 
-    enum AppMode { case live, replay, documents }
+    enum AppMode { case live, replay, documents, predictor }
 
     var body: some View {
         NavigationStack {
@@ -26,6 +26,7 @@ struct ContentView: View {
                 case .replay: ReplayPickerView(store: store)
                 case .live:   LiveConnectView(store: store)
                 case .documents: FIADocumentsView()
+                case .predictor: SessionPickerView()
                 }
             }
             .toolbar {

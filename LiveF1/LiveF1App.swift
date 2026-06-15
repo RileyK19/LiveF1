@@ -12,7 +12,8 @@ import NotificationLog
 struct LiveF1App: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+//            ContentView()
+            HomeView()
                 .notificationLog(config: NotificationLogConfig(
                     supabaseURL: Constants.supabaseURL,
                     supabaseAnonKey: Constants.supabaseAnonKey,

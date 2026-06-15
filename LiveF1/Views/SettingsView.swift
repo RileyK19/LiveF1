@@ -23,6 +23,7 @@ struct SettingsView: View {
                         Text("Live").tag(ContentView.AppMode.live)
                         Text("Replay").tag(ContentView.AppMode.replay)
                         Text("Documents").tag(ContentView.AppMode.documents)
+                        Text("Predictor").tag(ContentView.AppMode.predictor)
                     }
                     .pickerStyle(.segmented)
                 }

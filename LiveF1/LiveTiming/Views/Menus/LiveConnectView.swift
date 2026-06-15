@@ -93,6 +93,8 @@ struct LiveConnectView: View {
             if let saved = TokenStore.load() {
                 token = saved
             }
+            
+            connect()
         }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
             guard liveClient != nil else { return }
