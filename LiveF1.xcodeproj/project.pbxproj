@@ -19,7 +19,7 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		58D674C72FD2CC0200E13D17 /* Exceptions for "LiveF1" folder in "LiveF1" target */ = {
+		58CA56B72FE1AFFA00772EAB /* Exceptions for "LiveF1" folder in "LiveF1" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
@@ -29,10 +29,10 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		58D674B12FD1879100E13D17 /* LiveF1 */ = {
+		58CA567F2FE1AFFA00772EAB /* LiveF1 */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				58D674C72FD2CC0200E13D17 /* Exceptions for "LiveF1" folder in "LiveF1" target */,
+				58CA56B72FE1AFFA00772EAB /* Exceptions for "LiveF1" folder in "LiveF1" target */,
 			);
 			path = LiveF1;
 			sourceTree = "<group>";
@@ -54,9 +54,9 @@
 		58D674A62FD1879100E13D17 = {
 			isa = PBXGroup;
 			children = (
+				58CA567F2FE1AFFA00772EAB /* LiveF1 */,
 				58C0B0622FDE46D300C7BCC6 /* README.md */,
 				58D674E92FD56F7A00E13D17 /* .gitignore */,
-				58D674B12FD1879100E13D17 /* LiveF1 */,
 				58D674B02FD1879100E13D17 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -85,7 +85,7 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				58D674B12FD1879100E13D17 /* LiveF1 */,
+				58CA567F2FE1AFFA00772EAB /* LiveF1 */,
 			);
 			name = LiveF1;
 			packageProductDependencies = (

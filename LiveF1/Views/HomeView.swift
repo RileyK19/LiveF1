@@ -164,6 +164,7 @@ struct LiveBadge: View {
 
 struct HomeView: View {
     @StateObject private var store = F1SessionStore()
+    @StateObject private var championshipStore: ChampionshipDataStore = ChampionshipDataStore()
     @AppStorage("isDark") var isDark = false
     @State private var showingSettings = false
     @State private var mode: ContentView.AppMode = .live
@@ -220,6 +221,26 @@ struct HomeView: View {
                         )
                     }
                     .buttonStyle(.plain)
+                    .padding(.horizontal, 20)
+                    
+                    // Two column grid
+                    HStack(spacing: 14) {
+                        NavigationLink {
+                            ChampionshipScheduleView()
+                                .environmentObject(championshipStore)
+                        } label: {
+                            SquircleCard(icon: "calendar.circle.fill", title: "Schedule", subtitle: "2026 calendar", color: .red)
+                        }
+                        .buttonStyle(.plain)
+
+                        NavigationLink {
+                            ChampionshipStandingsView()
+                                .environmentObject(championshipStore)
+                        } label: {
+                            SquircleCard(icon: "trophy.fill", title: "Standings", subtitle: "Drivers & teams", color: .yellow)
+                        }
+                        .buttonStyle(.plain)
+                    }
                     .padding(.horizontal, 20)
 
                     Text("LiveF1 · Race Control")
