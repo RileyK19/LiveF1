@@ -47,15 +47,26 @@ enum TyreCompound: String {
     case intermediate = "INTERMEDIATE"
     case wet = "WET"
     case unknown = "UNKNOWN"
-
+    
     var color: String {
         switch self {
-        case .soft:         return "#FF3333"
-        case .medium:       return "#FFD700"
-        case .hard:         return "#CCCCCC"
-        case .intermediate: return "#39B54A"
-        case .wet:          return "#0067FF"
-        case .unknown:      return "#888888"
+        case .soft:         return "#CC0000"
+        case .medium:       return "#CCB200"
+        case .hard:         return "#999999"
+        case .intermediate: return "#007A2F"
+        case .wet:          return "#0047CC"
+        case .unknown:      return "#555555"
+        }
+    }
+    
+    var darkColor: String {
+        switch self {
+        case .soft:         return "#990000"
+        case .medium:       return "#997A00"
+        case .hard:         return "#555555"
+        case .intermediate: return "#004D1A"
+        case .wet:          return "#003399"
+        case .unknown:      return "#333333"
         }
     }
 }

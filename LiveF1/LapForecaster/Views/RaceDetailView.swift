@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Combine
 
 struct RaceDetailView: View {
     let session: F1PredictorSession
@@ -13,7 +14,7 @@ struct RaceDetailView: View {
 
     init(session: F1PredictorSession) {
         self.session = session
-        _viewModel = StateObject(wrappedValue: RaceViewModel(session: session))
+        _viewModel = StateObject(wrappedValue: { RaceViewModel(session: session) }())
     }
 
     var body: some View {
@@ -41,6 +42,13 @@ struct RaceDetailView: View {
         .navigationTitle(session.countryName)
         .navigationBarTitleDisplayMode(.large)
         .task { await viewModel.load() }
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                NavigationLink(destination: StrategyAssistantView(viewModel: viewModel)) {
+                    Image(systemName: "bubble.left.and.text.bubble.right")
+                }
+            }
+        }
     }
 
     private var driverPicker: some View {

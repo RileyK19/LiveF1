@@ -16,14 +16,7 @@ struct TyreBadge: View {
     let age: Int
 
     var colour: Color {
-        switch compound {
-        case "SOFT":   return .red
-        case "MEDIUM": return .yellow
-        case "HARD":   return isDark ? .white : .black
-        case "INTER":  return .green
-        case "WET":    return .blue
-        default:       return .gray
-        }
+        return getCompoundColor(compound, isDark)
     }
 
     var letter: String {
@@ -46,5 +39,16 @@ struct TyreBadge: View {
                 .padding(2)
             Text("\(age)").font(.system(size: 8)).foregroundStyle(.gray)
         }
+    }
+}
+
+func getCompoundColor(_ compound: String, _ isDark: Bool) -> Color {
+    switch compound {
+    case "SOFT":   return .red
+    case "MEDIUM": return .yellow
+    case "HARD":   return isDark ? .white : .black
+    case "INTER":  return .green
+    case "WET":    return .blue
+    default:       return .gray
     }
 }
