@@ -22,6 +22,9 @@ struct SessionPickerView: View {
                         Text(error)
                             .font(.caption)
                             .foregroundStyle(.secondary)
+                        Text("Note: Data not available during live sessions due to OpenF1 restrictions")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
                         Button("Retry") {
                             Task { await viewModel.load() }
                         }

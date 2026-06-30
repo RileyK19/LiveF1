@@ -17,20 +17,24 @@ struct StrategyAssistantView: View {
     @State private var prompt: String = ""
     @State private var messages: [ChatMessage] = []
     @FocusState private var inputFocused: Bool
+    
+    @State var selectedTab: String = "Chat"
 
     var body: some View {
-        TabView {
+        TabView (selection: $selectedTab) {
             // AI tab
             aiChatView
                 .tabItem {
                     Label("AI Assistant", systemImage: "bubble.left.and.text.bubble.right")
                 }
+                .tag("Chat")
 
             // Manual tab
             ManualStrategyView(viewModel: viewModel)
                 .tabItem {
                     Label("Manual", systemImage: "slider.horizontal.3")
                 }
+                .tag("Manual")
         }
         .navigationTitle("Strategy")
         .navigationBarTitleDisplayMode(.inline)

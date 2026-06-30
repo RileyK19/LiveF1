@@ -48,6 +48,11 @@ struct RaceDetailView: View {
                     Image(systemName: "bubble.left.and.text.bubble.right")
                 }
             }
+            ToolbarItem(placement: .navigationBarTrailing) {
+                NavigationLink(destination: StrategyAssistantView(viewModel: viewModel, selectedTab: "Manual")) {
+                    Image(systemName: "slider.horizontal.3")
+                }
+            }
         }
     }
 

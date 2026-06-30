@@ -63,6 +63,13 @@ struct ChampionshipScheduleView: View {
                     }
                 }
             }
+            .onAppear {
+                if !store.isLoadingSchedule && store.races.isEmpty {
+                    Task {
+                        await store.refresh()
+                    }
+                }
+            }
         }
     }
 }
@@ -87,14 +94,22 @@ private struct ChampionshipNextRaceBanner: View {
                         .background(.red, in: Capsule())
                 }
             }
-            Text("\(race.flagEmoji) \(race.raceName)")
-                .font(.title3.weight(.bold))
-            Text("\(race.circuit.location.locality), \(race.circuit.location.country)")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-            Text(race.formattedDate)
-                .font(.subheadline.weight(.medium))
-                .foregroundStyle(.red)
+            HStack {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("\(race.flagEmoji) \(race.raceName)")
+                        .font(.title3.weight(.bold))
+                    Text("\(race.circuit.location.locality), \(race.circuit.location.country)")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                    Text(race.formattedDate)
+                        .font(.subheadline.weight(.medium))
+                        .foregroundStyle(.red)
+                }
+                
+                Spacer()
+                
+                ChampionshipTrackView(trackName: race.circuit.location.locality)
+            }
         }
         .padding()
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
@@ -133,8 +148,6 @@ private struct ChampionshipRaceRow: View {
                         .foregroundStyle(.secondary)
                 }
                 
-                Spacer()
-                
                 if race.sprint != nil {
                     Text("Sprint")
                         .font(.caption2.weight(.semibold))
@@ -143,6 +156,10 @@ private struct ChampionshipRaceRow: View {
                         .padding(.vertical, 2)
                         .background(.orange.opacity(0.15), in: Capsule())
                 }
+                
+                Spacer()
+                
+                ChampionshipTrackView(trackName: race.circuit.location.locality)
                 
                 if isPast {
                     Image(systemName: "checkmark.circle.fill")
@@ -171,6 +188,7 @@ private struct ChampionshipRaceRow: View {
         }
     }
 }
+
 
 #Preview {
     ChampionshipScheduleView()

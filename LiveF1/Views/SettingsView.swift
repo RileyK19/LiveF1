@@ -18,15 +18,15 @@ struct SettingsView: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section("Data Source") {
-                    Picker("Mode", selection: $mode) {
-                        Text("Live").tag(ContentView.AppMode.live)
-                        Text("Replay").tag(ContentView.AppMode.replay)
-                        Text("Documents").tag(ContentView.AppMode.documents)
-                        Text("Predictor").tag(ContentView.AppMode.predictor)
-                    }
-                    .pickerStyle(.segmented)
-                }
+//                Section("Data Source") {
+//                    Picker("Mode", selection: $mode) {
+//                        Text("Live").tag(ContentView.AppMode.live)
+//                        Text("Replay").tag(ContentView.AppMode.replay)
+//                        Text("Documents").tag(ContentView.AppMode.documents)
+//                        Text("Predictor").tag(ContentView.AppMode.predictor)
+//                    }
+//                    .pickerStyle(.segmented)
+//                }
                 Section("Appearance") {
                     Toggle("Dark Mode", isOn: $isDark)
                 }
@@ -35,6 +35,13 @@ struct SettingsView: View {
                         DebugTabView(store: store)
                     } label: {
                         Label("Debug", systemImage: "ladybug")
+                    }
+                }
+                Section("Credits") {
+                    NavigationLink {
+                        CreditsView()
+                    } label: {
+                        Label("Credits", systemImage: "person.2.fill")
                     }
                 }
             }

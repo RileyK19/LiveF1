@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		58C0B0632FDE46D300C7BCC6 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = 58C0B0622FDE46D300C7BCC6 /* README.md */; };
+		58CA57312FF17B7A00772EAB /* PocketSVG in Frameworks */ = {isa = PBXBuildFile; productRef = 58CA57302FF17B7A00772EAB /* PocketSVG */; };
 		58D674D82FD56F1500E13D17 /* NotificationLog in Frameworks */ = {isa = PBXBuildFile; productRef = 58D674D72FD56F1500E13D17 /* NotificationLog */; };
 		58D674EA2FD56F7A00E13D17 /* .gitignore in Resources */ = {isa = PBXBuildFile; fileRef = 58D674E92FD56F7A00E13D17 /* .gitignore */; };
 /* End PBXBuildFile section */
@@ -45,6 +46,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				58D674D82FD56F1500E13D17 /* NotificationLog in Frameworks */,
+				58CA57312FF17B7A00772EAB /* PocketSVG in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -90,6 +92,7 @@
 			name = LiveF1;
 			packageProductDependencies = (
 				58D674D72FD56F1500E13D17 /* NotificationLog */,
+				58CA57302FF17B7A00772EAB /* PocketSVG */,
 			);
 			productName = LiveF1;
 			productReference = 58D674AF2FD1879100E13D17 /* LiveF1.app */;
@@ -121,6 +124,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				58D674D62FD56F1500E13D17 /* XCRemoteSwiftPackageReference "NotificationLog" */,
+				58CA572F2FF17B7A00772EAB /* XCRemoteSwiftPackageReference "pocketsvg" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 58D674B02FD1879100E13D17 /* Products */;
@@ -370,6 +374,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		58CA572F2FF17B7A00772EAB /* XCRemoteSwiftPackageReference "pocketsvg" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/pocketsvg/pocketsvg";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 3.2.0;
+			};
+		};
 		58D674D62FD56F1500E13D17 /* XCRemoteSwiftPackageReference "NotificationLog" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/RileyK19/NotificationLog";
@@ -381,6 +393,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		58CA57302FF17B7A00772EAB /* PocketSVG */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 58CA572F2FF17B7A00772EAB /* XCRemoteSwiftPackageReference "pocketsvg" */;
+			productName = PocketSVG;
+		};
 		58D674D72FD56F1500E13D17 /* NotificationLog */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 58D674D62FD56F1500E13D17 /* XCRemoteSwiftPackageReference "NotificationLog" */;
