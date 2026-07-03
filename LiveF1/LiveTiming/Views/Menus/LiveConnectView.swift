@@ -72,10 +72,21 @@ struct LiveConnectView: View {
                 .foregroundStyle(.secondary)
 
             if store.rawTopics.isEmpty == false {
-                NavigationLink("View Timing →") {
+                NavigationLink("View Timing Tower →") {
                     TimingTowerView(store: store)
                 }
                 .buttonStyle(.borderedProminent)
+                
+                NavigationLink("View Driver Tracker →") {
+                    TrackMapView(store: store)
+                }
+                .buttonStyle(.borderedProminent)
+                if token.isEmpty {
+                    Text("Note: driver tracker may not work without F1TV")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                }
             }
         }
         .padding()

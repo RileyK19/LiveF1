@@ -25,7 +25,7 @@ final class ChampionshipDataStore: ObservableObject {
 
     private let base = "https://api.jolpi.ca/ergast/f1"
     private let season = "current"
-    private let defaults = UserDefaults.standard
+    private let defaults = UserDefaults(suiteName: "group.com.riley.livef1") ?? .standard
 
     private enum CacheKey {
         static let schedule = "f1_cache_schedule"
@@ -93,6 +93,7 @@ final class ChampionshipDataStore: ObservableObject {
             let fetched = decoded.mrData.raceTable.races
             self.races = fetched
             saveCache(fetched, key: CacheKey.schedule)
+            print("Saved \(fetched.count) races to shared cache")
             updateLastUpdated()
         } catch {
             self.error = "Schedule: \(error.localizedDescription)"

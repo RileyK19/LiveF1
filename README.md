@@ -261,6 +261,34 @@ LiveF1/
     └── SettingsView.swift
 ```
 
+## Widget
+
+LiveF1 includes a Home Screen and Lock Screen widget showing the next F1 session.
+
+### Data flow
+- The main app fetches the schedule via `ChampionshipDataStore` and caches it in a **shared App Group** (`UserDefaults(suiteName: "group.com.riley.livef1")`), not `UserDefaults.standard`, so the widget extension (a separate process) can read it.
+- The widget's `NextSessionProvider` (a `TimelineProvider`) reads that same shared cache — it never makes network calls itself.
+- After any successful fetch, the app calls `WidgetCenter.shared.reloadTimelines(ofKind:)` to prompt the widget to refresh.
+
+### Supported sizes
+| Family | Shows |
+|---|---|
+| `.systemSmall` | Countdown to the next session |
+| `.systemMedium` | Race name + Quali/Sprint/Race columns (+ next session if it's still practice) |
+| `.accessoryCircular` | Lock Screen — short label + countdown |
+| `.accessoryRectangular` | Lock Screen — race name + key session times |
+| `.accessoryInline` | Lock Screen — single line next to the clock |
+
+### Setup requirements
+- **App Group** `group.com.riley.livef1` must be enabled under Signing & Capabilities on **both** the main app target and the widget extension target, with an identical entitlement string in both `.entitlements` files.
+- Shared model files (`ChampionshipRace`, `ChampionshipSession`, `ChampionshipCacheEntry`, etc.) must have **target membership** checked for the widget extension, or the widget won't compile/decode the cache.
+- Lock Screen widget views must avoid custom colors — the system applies its own tint, so styling relies on bold/underline instead of color for emphasis.
+
+### Key files
+- `WidgetProvider.swift` — `NextSessionEntry` + `NextSessionProvider`
+- `NextSessionWidget.swift` — `Widget` declaration, `supportedFamilies`
+- `NextSessionViews.swift` — per-family SwiftUI views
+
 ## Setup
 
 1. Clone the repo and open `LiveF1.xcodeproj` in Xcode

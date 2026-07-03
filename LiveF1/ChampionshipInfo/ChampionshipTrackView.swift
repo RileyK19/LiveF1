@@ -35,7 +35,7 @@ struct ChampionshipTrackView: View {
         guard let svgString = try? String(contentsOf: url, encoding: .utf8) else {
             return nil
         }
-        print(svgString)
+//        print(svgString)
 
         let paths = SVGBezierPath.paths(fromSVGString: svgString)
         return paths.first?.cgPath

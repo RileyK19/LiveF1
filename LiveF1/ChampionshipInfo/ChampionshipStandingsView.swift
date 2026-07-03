@@ -79,7 +79,7 @@ private struct DriverStandingRow: View {
 
     var points: Double { Double(standing.points) ?? 0 }
     var progress: Double { leaderPoints > 0 ? points / leaderPoints : 0 }
-    var teamColor: Color { Color(hex: standing.teamColor) ?? .gray }
+    var teamColor: Color { Color(hex: standing.teamColor) }
     var position: Int { Int(standing.position) ?? 0 }
 
     var body: some View {
@@ -164,7 +164,7 @@ private struct ConstructorStandingRow: View {
 
     var points: Double { Double(standing.points) ?? 0 }
     var progress: Double { leaderPoints > 0 ? points / leaderPoints : 0 }
-    var teamColor: Color { Color(hex: standing.teamColor) ?? .gray }
+    var teamColor: Color { Color(hex: standing.teamColor) }
     var position: Int { Int(standing.position) ?? 0 }
 
     var body: some View {

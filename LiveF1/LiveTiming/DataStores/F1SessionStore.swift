@@ -19,6 +19,8 @@ class F1SessionStore: ObservableObject {
     @Published var carTelemetry: [String: CarTelemetry] = [:]
     @Published var updateCount: Int = 0
     @Published var radioMessages: [RadioMessage] = []
+    @Published var carPositions: [String: CarPosition] = [:]
+    
     private var pendingRadio: [String: Any]?
     
     private let maxMessages = 200
@@ -84,6 +86,21 @@ class F1SessionStore: ObservableObject {
                 }
             }
         }
+        
+        if topic == "Position.z", let entries = payload["Position"] as? [[String: Any]] {
+            if let last = entries.last, let cars = last["Entries"] as? [String: Any] {
+                for (number, carRaw) in cars {
+                    guard let car = carRaw as? [String: Any] else { continue }
+                    carPositions[number] = CarPosition(
+                        x: car["X"] as? Double ?? 0,
+                        y: car["Y"] as? Double ?? 0,
+                        z: car["Z"] as? Double ?? 0,
+                        status: car["Status"] as? String ?? "Unknown"
+                    )
+                }
+            }
+        }
+        
         if topic == "TeamRadio" {
             if (rawTopics["SessionInfo"] as? [String: Any])?["Path"] as? String != nil {
                 processRadio(payload)

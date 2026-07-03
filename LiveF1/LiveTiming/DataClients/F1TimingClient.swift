@@ -140,7 +140,17 @@ class F1TimingClient: NSObject, F1DataSource {
         if type == 3 {
             if let result = json["result"] as? [String: Any] {
                 for (topic, payload) in result {
-                    if let p = payload as? [String: Any] {
+                    if topic.hasSuffix(".z") {
+                        if let b64 = extractBase64(payload) {
+                            if let decompressed = decompress(b64) {
+                                onMessage?(topic, decompressed)
+                            } else {
+                                print("   ❌ decompress failed")
+                            }
+                        } else {
+                            print("   ❌ extractBase64 failed")
+                        }
+                    } else if let p = payload as? [String: Any] {
                         onMessage?(topic, p)
                     }
                 }
@@ -156,35 +166,54 @@ class F1TimingClient: NSObject, F1DataSource {
               let topicName = args[0] as? String else { return }
 
         if topicName.hasSuffix(".z") {
-            if let payload = args[1] as? [String: Any],
-               let decompressed = decompress(payload) {
+            if let b64 = extractBase64(args[1]),
+               let decompressed = decompress(b64) {
                 onMessage?(topicName, decompressed)
+            } else {
+                print("❌ failed to decompress \(topicName)")
             }
         } else if let payload = args[1] as? [String: Any] {
             onMessage?(topicName, payload)
         }
     }
 
-    private func decompress(_ payload: [String: Any]) -> [String: Any]? {
-        guard let b64 = payload.values.compactMap({ $0 as? String }).first,
-              let compressed = Data(base64Encoded: b64) else { return nil }
+    private func decompress(_ b64: String) -> [String: Any]? {
+        guard let compressed = Data(base64Encoded: b64) else { return nil }
 
         let bytes = [UInt8](compressed)
         let stripped = (bytes.count > 2 && bytes[0] == 0x78) ? Data(bytes.dropFirst(2)) : compressed
 
-        let bufSize = compressed.count * 10
-        var output = [UInt8](repeating: 0, count: bufSize)
-        let written = stripped.withUnsafeBytes { ptr -> Int in
-            guard let base = ptr.baseAddress else { return -1 }
-            return compression_decode_buffer(&output, bufSize, base, stripped.count, nil, COMPRESSION_ZLIB)
-        }
-        guard written > 0,
-              let json = try? JSONSerialization.jsonObject(with: Data(output.prefix(written))) as? [String: Any]
-        else { return nil }
+        var multiplier = 20
+        let maxMultiplier = 500
 
-        var result = json
-        if let utc = payload["Utc"] as? String { result["Utc"] = utc }
-        return result
+        while multiplier <= maxMultiplier {
+            let bufSize = stripped.count * multiplier
+            var output = [UInt8](repeating: 0, count: bufSize)
+            let written = stripped.withUnsafeBytes { ptr -> Int in
+                guard let base = ptr.baseAddress else { return -1 }
+                return compression_decode_buffer(&output, bufSize, base, stripped.count, nil, COMPRESSION_ZLIB)
+            }
+
+            // If we filled the buffer exactly, it's likely truncated — grow and retry.
+            if written > 0 && written < bufSize {
+                if let json = try? JSONSerialization.jsonObject(with: Data(output.prefix(written))) as? [String: Any] {
+                    return json
+                }
+                return nil
+            }
+
+            multiplier *= 4
+        }
+
+        return nil
+    }
+    
+    private func extractBase64(_ raw: Any) -> String? {
+        if let s = raw as? String { return s }
+        if let dict = raw as? [String: Any] {
+            return dict.values.compactMap { $0 as? String }.first
+        }
+        return nil
     }
 }
 

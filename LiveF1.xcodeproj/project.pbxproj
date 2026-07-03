@@ -9,12 +9,44 @@
 /* Begin PBXBuildFile section */
 		58C0B0632FDE46D300C7BCC6 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = 58C0B0622FDE46D300C7BCC6 /* README.md */; };
 		58CA57312FF17B7A00772EAB /* PocketSVG in Frameworks */ = {isa = PBXBuildFile; productRef = 58CA57302FF17B7A00772EAB /* PocketSVG */; };
+		58CA57522FF7813A00772EAB /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 58CA57512FF7813A00772EAB /* WidgetKit.framework */; };
+		58CA57542FF7813A00772EAB /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 58CA57532FF7813A00772EAB /* SwiftUI.framework */; };
+		58CA57632FF7813C00772EAB /* LiveF1WidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 58CA574F2FF7813A00772EAB /* LiveF1WidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		58CA57952FF783CC00772EAB /* PocketSVG in Frameworks */ = {isa = PBXBuildFile; productRef = 58CA57942FF783CC00772EAB /* PocketSVG */; };
 		58D674D82FD56F1500E13D17 /* NotificationLog in Frameworks */ = {isa = PBXBuildFile; productRef = 58D674D72FD56F1500E13D17 /* NotificationLog */; };
 		58D674EA2FD56F7A00E13D17 /* .gitignore in Resources */ = {isa = PBXBuildFile; fileRef = 58D674E92FD56F7A00E13D17 /* .gitignore */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		58CA57612FF7813C00772EAB /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 58D674A72FD1879100E13D17 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 58CA574E2FF7813A00772EAB;
+			remoteInfo = LiveF1WidgetExtension;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		58CA57682FF7813C00772EAB /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				58CA57632FF7813C00772EAB /* LiveF1WidgetExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
 		58C0B0622FDE46D300C7BCC6 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		58CA574F2FF7813A00772EAB /* LiveF1WidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = LiveF1WidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		58CA57512FF7813A00772EAB /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		58CA57532FF7813A00772EAB /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
+		58CA57962FF7875400772EAB /* LiveF1WidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = LiveF1WidgetExtension.entitlements; sourceTree = "<group>"; };
 		58D674AF2FD1879100E13D17 /* LiveF1.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LiveF1.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		58D674E92FD56F7A00E13D17 /* .gitignore */ = {isa = PBXFileReference; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -27,6 +59,51 @@
 			);
 			target = 58D674AE2FD1879100E13D17 /* LiveF1 */;
 		};
+		58CA57672FF7813C00772EAB /* Exceptions for "LiveF1Widget" folder in "LiveF1WidgetExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 58CA574E2FF7813A00772EAB /* LiveF1WidgetExtension */;
+		};
+		58CA576C2FF781AD00772EAB /* Exceptions for "LiveF1" folder in "LiveF1WidgetExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				ChampionshipInfo/ChampionshipDataStore.swift,
+				ChampionshipInfo/ChampionshipModels.swift,
+				ChampionshipInfo/ChampionshipScheduleView.swift,
+				ChampionshipInfo/ChampionshipStandingsView.swift,
+				ChampionshipInfo/ChampionshipTrackView.swift,
+				"ChampionshipInfo/F1DBTrackSVGs/abu-dhabi.svg",
+				ChampionshipInfo/F1DBTrackSVGs/austin.svg,
+				ChampionshipInfo/F1DBTrackSVGs/bahrain.svg,
+				ChampionshipInfo/F1DBTrackSVGs/baku.svg,
+				ChampionshipInfo/F1DBTrackSVGs/barcelona.svg,
+				ChampionshipInfo/F1DBTrackSVGs/budapest.svg,
+				ChampionshipInfo/F1DBTrackSVGs/imola.svg,
+				ChampionshipInfo/F1DBTrackSVGs/istanbul.svg,
+				ChampionshipInfo/F1DBTrackSVGs/jeddah.svg,
+				"ChampionshipInfo/F1DBTrackSVGs/las-vegas.svg",
+				ChampionshipInfo/F1DBTrackSVGs/lusail.svg,
+				ChampionshipInfo/F1DBTrackSVGs/madrid.svg,
+				"ChampionshipInfo/F1DBTrackSVGs/marina-bay.svg",
+				ChampionshipInfo/F1DBTrackSVGs/melbourne.svg,
+				"ChampionshipInfo/F1DBTrackSVGs/mexico-city.svg",
+				ChampionshipInfo/F1DBTrackSVGs/miami.svg,
+				"ChampionshipInfo/F1DBTrackSVGs/monte-carlo.svg",
+				ChampionshipInfo/F1DBTrackSVGs/montreal.svg,
+				ChampionshipInfo/F1DBTrackSVGs/monza.svg,
+				"ChampionshipInfo/F1DBTrackSVGs/são-paulo.svg",
+				ChampionshipInfo/F1DBTrackSVGs/shanghai.svg,
+				ChampionshipInfo/F1DBTrackSVGs/silverstone.svg,
+				ChampionshipInfo/F1DBTrackSVGs/spa.svg,
+				ChampionshipInfo/F1DBTrackSVGs/spielberg.svg,
+				ChampionshipInfo/F1DBTrackSVGs/suzuka.svg,
+				ChampionshipInfo/F1DBTrackSVGs/zandvoort.svg,
+				LiveTiming/Models/ColorHelper.swift,
+			);
+			target = 58CA574E2FF7813A00772EAB /* LiveF1WidgetExtension */;
+		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -34,13 +111,32 @@
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
 				58CA56B72FE1AFFA00772EAB /* Exceptions for "LiveF1" folder in "LiveF1" target */,
+				58CA576C2FF781AD00772EAB /* Exceptions for "LiveF1" folder in "LiveF1WidgetExtension" target */,
 			);
 			path = LiveF1;
+			sourceTree = "<group>";
+		};
+		58CA57552FF7813A00772EAB /* LiveF1Widget */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				58CA57672FF7813C00772EAB /* Exceptions for "LiveF1Widget" folder in "LiveF1WidgetExtension" target */,
+			);
+			path = LiveF1Widget;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		58CA574C2FF7813A00772EAB /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				58CA57952FF783CC00772EAB /* PocketSVG in Frameworks */,
+				58CA57542FF7813A00772EAB /* SwiftUI.framework in Frameworks */,
+				58CA57522FF7813A00772EAB /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		58D674AC2FD1879100E13D17 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -53,12 +149,24 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		58CA57502FF7813A00772EAB /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				58CA57512FF7813A00772EAB /* WidgetKit.framework */,
+				58CA57532FF7813A00772EAB /* SwiftUI.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		58D674A62FD1879100E13D17 = {
 			isa = PBXGroup;
 			children = (
+				58CA57962FF7875400772EAB /* LiveF1WidgetExtension.entitlements */,
 				58CA567F2FE1AFFA00772EAB /* LiveF1 */,
 				58C0B0622FDE46D300C7BCC6 /* README.md */,
 				58D674E92FD56F7A00E13D17 /* .gitignore */,
+				58CA57552FF7813A00772EAB /* LiveF1Widget */,
+				58CA57502FF7813A00772EAB /* Frameworks */,
 				58D674B02FD1879100E13D17 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -67,6 +175,7 @@
 			isa = PBXGroup;
 			children = (
 				58D674AF2FD1879100E13D17 /* LiveF1.app */,
+				58CA574F2FF7813A00772EAB /* LiveF1WidgetExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -74,6 +183,29 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		58CA574E2FF7813A00772EAB /* LiveF1WidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 58CA57642FF7813C00772EAB /* Build configuration list for PBXNativeTarget "LiveF1WidgetExtension" */;
+			buildPhases = (
+				58CA574B2FF7813A00772EAB /* Sources */,
+				58CA574C2FF7813A00772EAB /* Frameworks */,
+				58CA574D2FF7813A00772EAB /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				58CA57552FF7813A00772EAB /* LiveF1Widget */,
+			);
+			name = LiveF1WidgetExtension;
+			packageProductDependencies = (
+				58CA57942FF783CC00772EAB /* PocketSVG */,
+			);
+			productName = LiveF1WidgetExtension;
+			productReference = 58CA574F2FF7813A00772EAB /* LiveF1WidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		58D674AE2FD1879100E13D17 /* LiveF1 */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 58D674BA2FD1879400E13D17 /* Build configuration list for PBXNativeTarget "LiveF1" */;
@@ -81,10 +213,12 @@
 				58D674AB2FD1879100E13D17 /* Sources */,
 				58D674AC2FD1879100E13D17 /* Frameworks */,
 				58D674AD2FD1879100E13D17 /* Resources */,
+				58CA57682FF7813C00772EAB /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				58CA57622FF7813C00772EAB /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				58CA567F2FE1AFFA00772EAB /* LiveF1 */,
@@ -108,6 +242,9 @@
 				LastSwiftUpdateCheck = 2620;
 				LastUpgradeCheck = 2620;
 				TargetAttributes = {
+					58CA574E2FF7813A00772EAB = {
+						CreatedOnToolsVersion = 26.2;
+					};
 					58D674AE2FD1879100E13D17 = {
 						CreatedOnToolsVersion = 26.2;
 					};
@@ -132,11 +269,19 @@
 			projectRoot = "";
 			targets = (
 				58D674AE2FD1879100E13D17 /* LiveF1 */,
+				58CA574E2FF7813A00772EAB /* LiveF1WidgetExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		58CA574D2FF7813A00772EAB /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		58D674AD2FD1879100E13D17 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -149,6 +294,13 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		58CA574B2FF7813A00772EAB /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		58D674AB2FD1879100E13D17 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -158,7 +310,77 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		58CA57622FF7813C00772EAB /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 58CA574E2FF7813A00772EAB /* LiveF1WidgetExtension */;
+			targetProxy = 58CA57612FF7813C00772EAB /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		58CA57652FF7813C00772EAB /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = LiveF1WidgetExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = TMN6MFG35F;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = LiveF1Widget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = LiveF1Widget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.riley.LiveF1.LiveF1Widget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		58CA57662FF7813C00772EAB /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = LiveF1WidgetExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = TMN6MFG35F;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = LiveF1Widget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = LiveF1Widget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.riley.LiveF1.LiveF1Widget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 		58D674B82FD1879400E13D17 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -285,6 +507,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = LiveF1/LiveF1.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = TMN6MFG35F;
@@ -320,6 +543,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = LiveF1/LiveF1.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = TMN6MFG35F;
@@ -353,6 +577,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		58CA57642FF7813C00772EAB /* Build configuration list for PBXNativeTarget "LiveF1WidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				58CA57652FF7813C00772EAB /* Debug */,
+				58CA57662FF7813C00772EAB /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		58D674AA2FD1879100E13D17 /* Build configuration list for PBXProject "LiveF1" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -394,6 +627,11 @@
 
 /* Begin XCSwiftPackageProductDependency section */
 		58CA57302FF17B7A00772EAB /* PocketSVG */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 58CA572F2FF17B7A00772EAB /* XCRemoteSwiftPackageReference "pocketsvg" */;
+			productName = PocketSVG;
+		};
+		58CA57942FF783CC00772EAB /* PocketSVG */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 58CA572F2FF17B7A00772EAB /* XCRemoteSwiftPackageReference "pocketsvg" */;
 			productName = PocketSVG;
