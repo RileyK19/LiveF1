@@ -4,6 +4,8 @@ A native iOS app for real-time Formula 1 timing, championship data, race documen
 
 LiveF1 connects directly to F1's official SignalR Core live timing stream (the same feed that powers professional tools like MultiViewer), tracks the full championship season, transcribes team radio on-device, summarizes FIA documents with Apple's on-device Foundation Models, and turns lap/stint data into a conversational race strategy assistant — all using nothing but Apple's own frameworks.
 
+## Testflight: https://testflight.apple.com/join/gW1asZnR
+
 <p align="center">
   <img src="LiveF1/Examples/HomePage.png" width="260" />
   <img src="LiveF1/Examples/LiveTimingScreen.png" width="260" />
