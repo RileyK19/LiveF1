@@ -15,7 +15,7 @@ struct HeaderRow: View {
     var body: some View {
         HStack(spacing: 4) {
             Text("P").frame(width: 20, alignment: .center)
-            Text("Driver").frame(width: 36, alignment: .leading)
+            Text("Driver").frame(width: 50, alignment: .leading)
             Text("Best").frame(width: 100, alignment: .trailing)
             Text("Last").frame(width: 100, alignment: .trailing)
             Text("Gap").frame(width: 60, alignment: .trailing)

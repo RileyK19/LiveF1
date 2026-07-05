@@ -9,9 +9,13 @@
 import SwiftUI
 
 struct DriverDetailView: View {
-    let driver: Driver
+    let driverID: String
     @ObservedObject var store: F1SessionStore
     @AppStorage("isDark") private var isDark = false
+    
+    var driver: Driver {
+        store.drivers.first(where: { $0.id == driverID }) ?? Driver(id: "", position: 0, tla: "", fullName: "", teamName: "", teamColour: .white, gap: "", interval: "", lastLap: "", isPersonalBest: false, sector1: "", sector2: "", sector3: "", compound: "", tyreAge: 0, pits: 0, inPit: false, bestLap: "", isBestLap: false, segments: [], sectorDelta: "")
+    }
 
     var telemetry: CarTelemetry? {
         store.carTelemetry[driver.id]
@@ -55,6 +59,12 @@ struct DriverDetailView: View {
                         .font(.caption)
                         .padding()
                 }
+                
+                MiniSectors(segments: driver.segments, delta: driver.sectorDelta)
+                    .frame(alignment: .leading)
+                    .padding()
+                    .background(isDark ? Color.white.opacity(0.05) : Color.black.opacity(0.05))
+                    .cornerRadius(12)
 
                 VStack(spacing: 8) {
                     InfoRow(label: "Last Lap", value: driver.lastLap)

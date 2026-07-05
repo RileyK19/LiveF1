@@ -28,11 +28,15 @@ class F1SessionStore: ObservableObject {
     private var transcriptionQueue: [RadioMessage] = []
     private var isTranscribing = false
     
+    var delaySeconds: TimeInterval = 0
+    private var buffer: [(releaseAt: Date, topic: String, payload: [String: Any])] = []
+    private var flushTask: Task<Void, Never>?
+    
     var dataSource: (any F1DataSource)? {
         didSet {
             dataSource?.onMessage = { [weak self] topic, payload in
                 Task { @MainActor in
-                    self?.handle(topic: topic, payload: payload)
+                    self?.enqueue(topic: topic, payload: payload)
                 }
             }
             dataSource?.onStateChange = { [weak self] state in
@@ -44,6 +48,19 @@ class F1SessionStore: ObservableObject {
     }
     
     @Published var drivers: [Driver] = []
+    
+    init() {
+        flushTask = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: 200_000_000) // 5x/sec
+                self?.flushDue()
+            }
+        }
+    }
+
+    deinit {
+        flushTask?.cancel()
+    }
     
     private func handle(topic: String, payload: [String: Any]) {
         //        print("📨 \(topic)")
@@ -80,7 +97,7 @@ class F1SessionStore: ObservableObject {
                         speed:    channels["2"] as? Int ?? 0,
                         gear:     channels["3"] as? Int ?? 0,
                         throttle: channels["4"] as? Int ?? 0,
-                        brake:    (channels["5"] as? Int ?? 0) == 1,
+                        brake:    (channels["5"] as? Int ?? 0) == 100,
                         drs:      (channels["45"] as? Int ?? 0) > 0
                     )
                 }
@@ -255,6 +272,44 @@ class F1SessionStore: ObservableObject {
                     self.processTranscriptionQueue()
                 }
             }
+        }
+    }
+    
+    private func enqueue(topic: String, payload: [String: Any]) {
+        guard delaySeconds > 0 else {
+            handle(topic: topic, payload: payload)
+            return
+        }
+        buffer.append((Date().addingTimeInterval(delaySeconds), topic, payload))
+    }
+
+    private func flushDue() {
+        guard !buffer.isEmpty else { return }
+        let now = Date()
+        var i = 0
+        while i < buffer.count, buffer[i].releaseAt <= now {
+            i += 1
+        }
+        guard i > 0 else { return }
+        let ready = buffer[0..<i]
+        buffer.removeFirst(i)
+        for item in ready {
+            handle(topic: item.topic, payload: item.payload)
+        }
+    }
+    
+    func goLive() {
+        let pending = buffer
+        buffer.removeAll()
+        for item in pending {
+            handle(topic: item.topic, payload: item.payload)
+        }
+    }
+    
+    func setDelay(_ seconds: TimeInterval) {
+        delaySeconds = seconds
+        if seconds == 0 {
+            goLive()
         }
     }
 }

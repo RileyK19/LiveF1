@@ -40,7 +40,8 @@ struct TimingTowerView: View {
                 }
             }
             .navigationDestination(item: $selectedDriver) { driver in
-                DriverDetailView(driver: driver, store: store)
+//                DriverDetailView(driver: driver, store: store)
+                DriverDetailView(driverID: driver.id, store: store)
             }
             .overlay(alignment: .top) {
                 if let msg = radioToast {
