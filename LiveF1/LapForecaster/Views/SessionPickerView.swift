@@ -7,8 +7,21 @@
 
 import SwiftUI
 
-struct SessionPickerView: View {
+struct SessionPickerView<Destination: View>: View {
     @StateObject private var viewModel = SessionPickerViewModel()
+
+    let title: String
+    let destination: (F1PredictorSession) -> Destination
+
+    init(
+        title: String = "2026 Season",
+        sessionType: String? = "Race",
+        @ViewBuilder destination: @escaping (F1PredictorSession) -> Destination
+    ) {
+        self.title = title
+        self.destination = destination
+        _viewModel = StateObject(wrappedValue: SessionPickerViewModel(sessionType: sessionType))
+    }
 
     var body: some View {
         NavigationStack {
@@ -31,14 +44,14 @@ struct SessionPickerView: View {
                     }
                 } else {
                     List(viewModel.sessions) { session in
-                        NavigationLink(destination: RaceDetailView(session: session)) {
+                        NavigationLink(destination: destination(session)) {
                             SessionRowView(session: session)
                         }
                     }
                     .listStyle(.insetGrouped)
                 }
             }
-            .navigationTitle("2026 Season")
+            .navigationTitle(title)
             .task { await viewModel.load() }
         }
     }
@@ -49,8 +62,18 @@ struct SessionRowView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(session.countryName)
-                .font(.headline)
+            HStack {
+                Text(session.countryName)
+                    .font(.headline)
+                Spacer()
+                Text(session.sessionName)
+                    .font(.caption2.weight(.semibold))
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 3)
+                    .background(sessionColor.opacity(0.15))
+                    .foregroundStyle(sessionColor)
+                    .clipShape(Capsule())
+            }
             Text(session.circuitShortName)
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
@@ -61,5 +84,15 @@ struct SessionRowView: View {
             }
         }
         .padding(.vertical, 4)
+    }
+
+    private var sessionColor: Color {
+        switch session.sessionName {
+        case "Race": return .red
+        case "Qualifying": return .blue
+        case "Sprint": return .orange
+        case "Sprint Qualifying", "Sprint Shootout": return .purple
+        default: return .secondary // Practice 1/2/3, etc.
+        }
     }
 }

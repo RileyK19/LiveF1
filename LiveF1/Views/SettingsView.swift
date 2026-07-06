@@ -10,7 +10,7 @@ import SafariServices
 import Combine
 
 struct SettingsView: View {
-    @Binding var mode: ContentView.AppMode
+//    @Binding var mode: ContentView.AppMode
     @AppStorage("isDark") var isDark = true
     @Environment(\.dismiss) var dismiss
     @ObservedObject var store: F1SessionStore

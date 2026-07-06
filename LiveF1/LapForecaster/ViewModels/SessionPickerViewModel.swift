@@ -14,14 +14,20 @@ import Combine
 @MainActor
 class SessionPickerViewModel: ObservableObject {
     @Published var sessions: [F1PredictorSession] = []
-    @Published var isLoading: Bool = false
-    @Published var error: String? = nil
+    @Published var isLoading = false
+    @Published var error: String?
+
+    let sessionType: String?
+
+    init(sessionType: String? = "Race") { // default preserves old behavior
+        self.sessionType = sessionType
+    }
 
     func load() async {
         isLoading = true
         error = nil
         do {
-            let fetched = try await F1PredictorSessionParser.fetchRaces(year: 2026)
+            let fetched = try await F1PredictorSessionParser.fetchRaces(year: 2026, sessionType: sessionType)
             sessions = fetched.sortedByDate
         } catch {
             self.error = error.localizedDescription

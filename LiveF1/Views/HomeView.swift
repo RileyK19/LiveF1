@@ -167,7 +167,9 @@ struct HomeView: View {
     @StateObject private var championshipStore: ChampionshipDataStore = ChampionshipDataStore()
     @AppStorage("isDark") var isDark = false
     @State private var showingSettings = false
-    @State private var mode: ContentView.AppMode = .live
+    @State private var mode: AppMode = .live
+    
+    enum AppMode { case live, replay, documents, predictor }
 
     var body: some View {
         NavigationStack {
@@ -196,11 +198,36 @@ struct HomeView: View {
                     }
                     .buttonStyle(.plain)
                     .padding(.horizontal, 20)
+                    
+                    // Telemetry row
+                    NavigationLink {
+                        SessionPickerView(title: "Speed Trace", sessionType: nil) { session in
+                            LapPickerView(session: session)
+                        }
+                    } label: {
+                        RowCard(
+                            icon: "waveform.path.ecg",
+                            title: "Telemetry",
+                            subtitle: "Speed trace data from past sessions",
+                            color: .green
+                        )
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.horizontal, 20)
 
                     // Two column grid
                     HStack(spacing: 14) {
-                        NavigationLink { ReplayPickerView(store: store) } label: {
-                            SquircleCard(icon: "arrow.counterclockwise.circle.fill", title: "Replay", subtitle: "Past sessions", color: .orange)
+//                        NavigationLink { ReplayPickerView(store: store) } label: {
+//                            SquircleCard(icon: "arrow.counterclockwise.circle.fill", title: "Replay", subtitle: "Past sessions", color: .orange)
+//                        }
+//                        .buttonStyle(.plain)
+                        
+                        NavigationLink {
+                            SessionPickerView(title: "Race Pace") { session in
+                                RacePaceView(session: session)
+                            }
+                        } label: {
+                            SquircleCard(icon: "bolt.fill", title: "Race Pace", subtitle: "View race pace graphs", color: .orange)
                         }
                         .buttonStyle(.plain)
 
@@ -212,7 +239,11 @@ struct HomeView: View {
                     .padding(.horizontal, 20)
 
                     // Predictor row
-                    NavigationLink { SessionPickerView() } label: {
+                    NavigationLink {
+                        SessionPickerView { session in
+                            RaceDetailView(session: session)
+                        }
+                    } label: {
                         RowCard(
                             icon: "chart.line.uptrend.xyaxis",
                             title: "Predictor",
@@ -262,7 +293,8 @@ struct HomeView: View {
                 }
             }
             .sheet(isPresented: $showingSettings) {
-                SettingsView(mode: $mode, store: store)
+//                SettingsView(mode: $mode, store: store)
+                SettingsView(store: store)
             }
         }
         .preferredColorScheme(isDark ? .dark : .light)
