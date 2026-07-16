@@ -8,10 +8,13 @@
 import SwiftUI
 
 struct SessionPickerView<Destination: View>: View {
-    @StateObject private var viewModel = SessionPickerViewModel()
+    @StateObject private var viewModel: SessionPickerViewModel
 
     let title: String
     let destination: (F1PredictorSession) -> Destination
+
+    @State private var searchText = ""                              // NEW
+    @State private var selectedSessionTypes: Set<String> = []        // NEW: empty = show all
 
     init(
         title: String = "2026 Season",
@@ -21,6 +24,20 @@ struct SessionPickerView<Destination: View>: View {
         self.title = title
         self.destination = destination
         _viewModel = StateObject(wrappedValue: SessionPickerViewModel(sessionType: sessionType))
+    }
+
+    // Distinct session types available to filter by, derived from loaded data
+    private var availableSessionTypes: [String] {
+        Array(Set(viewModel.sessions.map(\.sessionName))).sorted()
+    }
+
+    private var filteredSessions: [F1PredictorSession] {
+        viewModel.sessions
+            .filter { selectedSessionTypes.isEmpty || selectedSessionTypes.contains($0.sessionName) }
+            .filter { searchText.isEmpty ||
+                $0.countryName.localizedCaseInsensitiveContains(searchText) ||
+                $0.circuitShortName.localizedCaseInsensitiveContains(searchText)
+            }
     }
 
     var body: some View {
@@ -43,15 +60,59 @@ struct SessionPickerView<Destination: View>: View {
                         }
                     }
                 } else {
-                    List(viewModel.sessions) { session in
-                        NavigationLink(destination: destination(session)) {
-                            SessionRowView(session: session)
+                    VStack(spacing: 0) {
+                        // NEW: horizontal chip filter for session type
+                        if availableSessionTypes.count > 1 {
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 8) {
+                                    Button {
+                                        selectedSessionTypes = []
+                                    } label: {
+                                        Text("All")
+                                            .font(.caption.weight(.medium))
+                                            .padding(.horizontal, 12)
+                                            .padding(.vertical, 6)
+                                            .background(selectedSessionTypes == [] ? Color.accentColor : Color(.secondarySystemBackground))
+                                            .foregroundStyle(selectedSessionTypes == [] ? .white : .primary)
+                                            .clipShape(Capsule())
+                                    }
+                                    .buttonStyle(.plain)
+                                    ForEach(availableSessionTypes, id: \.self) { type in
+                                        let isSelected = selectedSessionTypes.contains(type)
+                                        Button {
+                                            if isSelected {
+                                                selectedSessionTypes.remove(type)
+                                            } else {
+                                                selectedSessionTypes.insert(type)
+                                            }
+                                        } label: {
+                                            Text(type)
+                                                .font(.caption.weight(.medium))
+                                                .padding(.horizontal, 12)
+                                                .padding(.vertical, 6)
+                                                .background(isSelected ? Color.accentColor : Color(.secondarySystemBackground))
+                                                .foregroundStyle(isSelected ? .white : .primary)
+                                                .clipShape(Capsule())
+                                        }
+                                        .buttonStyle(.plain)
+                                    }
+                                }
+                                .padding(.horizontal)
+                                .padding(.vertical, 8)
+                            }
                         }
+
+                        List(filteredSessions) { session in
+                            NavigationLink(destination: destination(session)) {
+                                SessionRowView(session: session)
+                            }
+                        }
+                        .listStyle(.insetGrouped)
                     }
-                    .listStyle(.insetGrouped)
                 }
             }
             .navigationTitle(title)
+            .searchable(text: $searchText, prompt: "Search country or circuit")   // NEW
             .task { await viewModel.load() }
         }
     }

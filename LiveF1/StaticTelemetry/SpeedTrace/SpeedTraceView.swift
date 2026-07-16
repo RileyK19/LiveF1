@@ -10,13 +10,13 @@ import Charts
 
 struct SpeedTraceView: View {
     @StateObject private var viewModel: SpeedTraceViewModel
-    let driverNumber: Int
-    let lap: F1Lap
+    let laps: [F1Lap]
+    @State private var zoom: Double = 30   // seconds visible
+    @State private var scrollPosition: Double = 0
 
-    init(session: F1PredictorSession, driverNumber: Int, lap: F1Lap) {
+    init(session: F1PredictorSession, laps: [F1Lap]) {
         _viewModel = StateObject(wrappedValue: SpeedTraceViewModel(session: session))
-        self.driverNumber = driverNumber
-        self.lap = lap
+        self.laps = laps
     }
 
     var body: some View {
@@ -30,31 +30,47 @@ struct SpeedTraceView: View {
                     VStack(alignment: .leading, spacing: 16) {
                         Text("Speed").font(.caption).foregroundStyle(.secondary)
                         Chart(viewModel.samples) {
-                            LineMark(x: .value("Time", $0.date), y: .value("Speed", $0.speed ?? 0))
+                            LineMark(x: .value("Elapsed", $0.elapsed), y: .value("Speed", $0.speed ?? 0))
+                                .foregroundStyle(by: .value("Lap", $0.label))
                                 .interpolationMethod(.catmullRom)
-                                .foregroundStyle(.red)
                         }
                         .frame(height: 160)
+                        .chartScrollableAxes(.horizontal)
+                        .chartXVisibleDomain(length: zoom)
+                        .chartScrollPosition(x: $scrollPosition)
 
                         Text("Throttle").font(.caption).foregroundStyle(.secondary)
                         Chart(viewModel.samples) {
-                            LineMark(x: .value("Time", $0.date), y: .value("Throttle", $0.throttle ?? 0))
-                                .foregroundStyle(.green)
+                            LineMark(x: .value("Elapsed", $0.elapsed), y: .value("Throttle", $0.throttle ?? 0))
+                                .foregroundStyle(by: .value("Lap", $0.label))
                         }
                         .frame(height: 90)
+                        .chartScrollableAxes(.horizontal)
+                        .chartXVisibleDomain(length: zoom)
+                        .chartScrollPosition(x: $scrollPosition)
 
                         Text("Brake").font(.caption).foregroundStyle(.secondary)
                         Chart(viewModel.samples) {
-                            AreaMark(x: .value("Time", $0.date), y: .value("Brake", $0.brake ?? 0))
-                                .foregroundStyle(.orange.opacity(0.6))
+                            LineMark(x: .value("Elapsed", $0.elapsed), y: .value("Brake", $0.brake ?? 0))
+                                .foregroundStyle(by: .value("Lap", $0.label))
                         }
                         .frame(height: 60)
+                        .chartScrollableAxes(.horizontal)
+                        .chartXVisibleDomain(length: zoom)
+                        .chartScrollPosition(x: $scrollPosition)
+
+                        // Simplest possible zoom control: a slider
+                        Slider(value: $zoom, in: 1...(viewModel.samples.map(\.elapsed).max() ?? 60))
+                        Text("Zoom: \(Int(zoom))s window").font(.caption2).foregroundStyle(.secondary)
                     }
                     .padding()
                 }
             }
         }
-        .navigationTitle("Lap \(lap.lapNumber) · #\(driverNumber)")
-        .task { await viewModel.loadLap(lap, driverNumber: driverNumber) }
+        .navigationTitle(laps.count == 1 ? "Lap \(laps[0].lapNumber) · #\(laps[0].driverNumber)" : "\(laps.count) Laps")
+        .task {
+            await viewModel.loadLaps(laps)
+            zoom = viewModel.samples.map(\.elapsed).max() ?? 30
+        }
     }
 }

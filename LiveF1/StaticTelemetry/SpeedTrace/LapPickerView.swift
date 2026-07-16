@@ -38,22 +38,26 @@ struct LapPickerView: View {
                     .padding()
 
                     List(viewModel.lapsForSelectedDriver) { lap in
-                        NavigationLink(
-                            destination: SpeedTraceView(
-                                session: session,
-                                driverNumber: viewModel.selectedDriverNumber ?? lap.driverNumber,
-                                lap: lap
-                            )
-                        ) {
+                        Button {
+                            viewModel.toggleSelection(lap)
+                        } label: {
                             HStack {
                                 Text("Lap \(lap.lapNumber)")
                                 Spacer()
-                                Text(lap.formattedLapTime)
-                                    .foregroundStyle(.secondary)
+                                Text(lap.formattedLapTime).foregroundStyle(.secondary)
+                                Image(systemName: viewModel.isSelected(lap) ? "checkmark.circle.fill" : "circle")
                             }
                         }
+                        .buttonStyle(.plain)
                     }
                     .listStyle(.insetGrouped)
+
+                    if !viewModel.selectedLaps.isEmpty {
+                        NavigationLink("Compare \(viewModel.selectedLaps.count) Laps") {
+                            SpeedTraceView(session: session, laps: viewModel.selectedLaps)
+                        }
+                        .padding()
+                    }
                 }
             }
         }

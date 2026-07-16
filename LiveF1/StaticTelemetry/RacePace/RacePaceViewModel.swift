@@ -15,6 +15,7 @@ class RacePaceViewModel: ObservableObject {
     @Published var driverStats: [DriverPaceStats] = []
     @Published var isLoading = false
     @Published var error: String?
+    @Published var fastestLapTime: Double = 0
 
     init(session: F1PredictorSession) {
         self.session = session
@@ -48,11 +49,12 @@ class RacePaceViewModel: ObservableObject {
             return DriverPaceStats(driverNumber: driver, durations: filtered)
         }
 
-        // Session-wide fastest single lap across all drivers = 100% baseline
         guard let fastestOverall = rawStats.compactMap(\.durations.first).min() else {
             driverStats = []
             return
         }
+
+        fastestLapTime = fastestOverall   // NEW: store it
 
         driverStats = rawStats
             .map { $0.asPercent(of: fastestOverall) }
