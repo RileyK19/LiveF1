@@ -5,9 +5,6 @@
 //  Created by Riley Koo on 6/15/26.
 //
 
-
-//  StrategyTranslator.swift
-
 import Foundation
 import FoundationModels
 import Combine
@@ -32,15 +29,21 @@ struct GeneratedStint {
 class StrategyTranslator: ObservableObject {
     @Published var isThinking: Bool = false
     @Published var error: String? = nil
+    @Published var lastEvaluation: EvaluateStrategyResult? = nil
+    @Published var toolCallLog: [(arguments: EvaluateStrategyArguments, result: EvaluateStrategyResult)] = []
 
     private let model = SystemLanguageModel.default
 
     func translate(
         prompt: String,
-        context: StrategyContext
+        context: StrategyContext,
+        median: Double,
+        trackModel: TrackEvolutionCalculator.TrackEvolutionModel,
+        annotatedLaps: [AnnotatedLap]
     ) async -> [F1PredictorStint]? {
         isThinking = true
         error = nil
+        lastEvaluation = nil
         defer { isThinking = false }
 
         guard model.isAvailable else {
@@ -48,9 +51,24 @@ class StrategyTranslator: ObservableObject {
             return nil
         }
 
+        let tool = EvaluateStrategyTool(
+            context: context,
+            median: median,
+            trackModel: trackModel,
+            annotatedLaps: annotatedLaps,
+            onResult: { [weak self] args, result in
+                Task { @MainActor in
+                    self?.toolCallLog.append((args, result))
+                    self?.lastEvaluation = result
+                }
+            }
+        )
+
         do {
             let session = LanguageModelSession(
-                instructions: context.systemPrompt()
+                tools: [tool],
+                instructions: context.systemPrompt() +
+                    "\nBefore finalizing your answer, call evaluateStrategy on the candidate stint sequence to get its real time delta. Never state a time delta you didn't get from evaluateStrategy."
             )
             let response = try await session.respond(
                 to: prompt,

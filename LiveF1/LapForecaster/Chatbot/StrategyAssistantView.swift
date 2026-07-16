@@ -171,21 +171,32 @@ struct StrategyAssistantView: View {
         )
 
         Task { @MainActor in
+            guard let median = viewModel.driverMedianLapTime,
+                  let trackModel = viewModel.trackEvolutionModel else {
+                messages.append(ChatMessage(role: .assistant, text: "Missing race data to evaluate strategies."))
+                return
+            }
+
             if let generatedStints = await translator.translate(
                 prompt: currentPrompt,
-                context: context
+                context: context,
+                median: median,
+                trackModel: trackModel,
+                annotatedLaps: viewModel.annotatedLaps
             ) {
                 viewModel.hypotheticalStints = generatedStints
-                // text confirmation first
                 messages.append(ChatMessage(role: .assistant, text: formatResponse(generatedStints)))
-                // then result card
-                let delta = viewModel.calculateTimeDeltaVsDriver(hypothetical: generatedStints)
-                messages.append(ChatMessage(
-                    role: .assistant,
-                    actual: viewModel.stintsForSelectedDriver,
-                    hypothetical: generatedStints,
-                    timeDelta: delta
-                ))
+
+                if let evaluation = translator.lastEvaluation {
+                    messages.append(ChatMessage(
+                        role: .assistant,
+                        actual: viewModel.stintsForSelectedDriver,
+                        hypothetical: generatedStints,
+                        timeDelta: evaluation.deltaVsActualSeconds
+                    ))
+                } else {
+                    messages.append(ChatMessage(role: .assistant, text: "Couldn't verify this strategy against the model — no evaluation was run."))
+                }
             } else if let error = translator.error {
                 messages.append(ChatMessage(role: .assistant, text: "Sorry, I couldn't process that: \(error)"))
             }
