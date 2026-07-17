@@ -28,40 +28,76 @@ struct LapPickerView: View {
                     Button("Retry") { Task { await viewModel.load() } }
                 }
             } else {
-                VStack(spacing: 0) {
-                    Picker("Driver", selection: $viewModel.selectedDriverNumber) {
-                        ForEach(viewModel.drivers, id: \.self) { driver in
-                            Text("#\(driver)").tag(Optional(driver))
-                        }
-                    }
-                    .pickerStyle(.menu)
-                    .padding()
-
-                    List(viewModel.lapsForSelectedDriver) { lap in
-                        Button {
-                            viewModel.toggleSelection(lap)
-                        } label: {
-                            HStack {
-                                Text("Lap \(lap.lapNumber)")
-                                Spacer()
-                                Text(lap.formattedLapTime).foregroundStyle(.secondary)
-                                Image(systemName: viewModel.isSelected(lap) ? "checkmark.circle.fill" : "circle")
+                ZStack {
+                    VStack(spacing: 0) {
+                        Picker("Driver", selection: $viewModel.selectedDriverNumber) {
+                            ForEach(viewModel.drivers, id: \.self) { driver in
+                                Text("#\(driver)").tag(Optional(driver))
                             }
                         }
-                        .buttonStyle(.plain)
-                    }
-                    .listStyle(.insetGrouped)
-
-                    if !viewModel.selectedLaps.isEmpty {
-                        NavigationLink("Compare \(viewModel.selectedLaps.count) Laps") {
-                            SpeedTraceView(session: session, laps: viewModel.selectedLaps)
-                        }
+                        .pickerStyle(.menu)
                         .padding()
+                        
+                        List(viewModel.lapsForSelectedDriver) { lap in
+                            Button {
+                                viewModel.toggleSelection(lap)
+                            } label: {
+                                HStack {
+                                    Text("Lap \(lap.lapNumber)")
+                                        .foregroundStyle(lapColor(lap: lap))
+                                    Spacer()
+                                    Text(lap.formattedLapTime).foregroundStyle(.secondary)
+                                    Image(systemName: viewModel.isSelected(lap) ? "checkmark.circle.fill" : "circle")
+                                }
+                            }
+                            .buttonStyle(.plain)
+                        }
+                        .listStyle(.insetGrouped)
+                    }
+                    if !viewModel.selectedLaps.isEmpty {
+                        VStack {
+                            Spacer()
+                            NavigationLink {
+                                SpeedTraceView(session: session, laps: viewModel.selectedLaps)
+                            } label: {
+                                HStack {
+                                    Image(systemName: "chart.line.uptrend.xyaxis")
+                                    Text("Compare \(viewModel.selectedLaps.count) Laps")
+                                        .fontWeight(.semibold)
+                                        .padding(5)
+                                }
+                                .padding(14)
+                            }
+                            .buttonStyle(.glassProminent)
+                        }
                     }
                 }
             }
         }
         .navigationTitle("Select Lap")
         .task { await viewModel.load() }
+    }
+    
+    private func lapColor(lap: F1Lap) -> Color {
+        let minLap = viewModel.lapsForSelectedDriver.min(by: { $0.lapDuration ?? 0.0 < $1.lapDuration ?? 0.0})
+        guard let minLap = viewModel.lapsForSelectedDriver
+            .filter({ $0.lapDuration != nil })
+            .min(by: { $0.lapDuration! < $1.lapDuration! }),
+              let lapDuration = lap.lapDuration,
+              let minLapDuration = minLap.lapDuration,
+              let fastest = viewModel.laps.compactMap(\.lapDuration).min()
+        else {
+            return .primary
+        }
+        if fastest == lapDuration {
+            return .purple
+        }
+        if minLap.id == lap.id {
+            return .green
+        }
+        if minLapDuration * 1.10 < lapDuration {
+            return .red
+        }
+        return .primary
     }
 }
