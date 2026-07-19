@@ -28,5 +28,6 @@ struct Driver: Identifiable, Hashable {
     var bestLap: String
     var isBestLap: Bool
     var segments: [[Int]]
-    var sectorDelta: String
+//    var sectorDelta: String
+    var sectorDeltas: [String]
 }

@@ -14,7 +14,30 @@ struct DriverDetailView: View {
     @AppStorage("isDark") private var isDark = false
     
     var driver: Driver {
-        store.drivers.first(where: { $0.id == driverID }) ?? Driver(id: "", position: 0, tla: "", fullName: "", teamName: "", teamColour: .white, gap: "", interval: "", lastLap: "", isPersonalBest: false, sector1: "", sector2: "", sector3: "", compound: "", tyreAge: 0, pits: 0, inPit: false, bestLap: "", isBestLap: false, segments: [], sectorDelta: "")
+        store.drivers.first(where: { $0.id == driverID }) ?? Driver(
+            id: "",
+            position: 0,
+            tla: "",
+            fullName: "",
+            teamName: "",
+            teamColour: .white,
+            gap: "",
+            interval: "",
+            lastLap: "",
+            isPersonalBest: false,
+            sector1: "",
+            sector2: "",
+            sector3: "",
+            compound: "",
+            tyreAge: 0,
+            pits: 0,
+            inPit: false,
+            bestLap: "",
+            isBestLap: false,
+            segments: [],
+//            sectorDelta: ""
+            sectorDeltas: []
+        )
     }
 
     var telemetry: CarTelemetry? {
@@ -60,7 +83,8 @@ struct DriverDetailView: View {
                         .padding()
                 }
                 
-                MiniSectors(segments: driver.segments, delta: driver.sectorDelta)
+//                MiniSectors(segments: driver.segments, delta: driver.sectorDelta)
+                MiniSectors(segments: driver.segments, sectorDeltas: driver.sectorDeltas)
                     .frame(alignment: .leading)
                     .padding()
                     .background(isDark ? Color.white.opacity(0.05) : Color.black.opacity(0.05))

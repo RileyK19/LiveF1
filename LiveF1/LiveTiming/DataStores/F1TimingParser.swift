@@ -43,30 +43,67 @@ class F1TimingParser {
             
             let bestLapRaw = timing["BestLapTime"] as? [String: Any] ?? [:]
             
+//            let driverStats = timingStats[number] as? [String: Any] ?? [:]
+//            let bestSectorsRaw = driverStats["BestSectors"] as? [[String: Any]] ?? []
+//            let bestS1 = bestSectorsRaw.count > 0 ? bestSectorsRaw[0]["Value"] as? String ?? "" : ""
+//            let bestS2 = bestSectorsRaw.count > 1 ? bestSectorsRaw[1]["Value"] as? String ?? "" : ""
+//            let bestS3 = bestSectorsRaw.count > 2 ? bestSectorsRaw[2]["Value"] as? String ?? "" : ""
+//            let statsArr = timing["Stats"] as? [[String: Any]] ?? []
+//
+//            func diffToFastest(_ index: Int) -> String {
+//                guard index < statsArr.count,
+//                      let d = statsArr[index]["TimeDiffToFastest"] as? String,
+//                      !d.isEmpty else { return "" }
+//                return d
+//            }
+//
+//            let sectorDeltas: [String] = [diffToFastest(0), diffToFastest(1), diffToFastest(2)]
+//            
+//            let curS1 = parseSector(0, from: timing["Sectors"])
+//            let curS2 = parseSector(1, from: timing["Sectors"])
+//            let curS3 = parseSector(2, from: timing["Sectors"])
+            
             let driverStats = timingStats[number] as? [String: Any] ?? [:]
             let bestSectorsRaw = driverStats["BestSectors"] as? [[String: Any]] ?? []
-            let bestS1 = bestSectorsRaw.count > 0 ? bestSectorsRaw[0]["Value"] as? String ?? "" : ""
-            let bestS2 = bestSectorsRaw.count > 1 ? bestSectorsRaw[1]["Value"] as? String ?? "" : ""
-            let bestS3 = bestSectorsRaw.count > 2 ? bestSectorsRaw[2]["Value"] as? String ?? "" : ""
-            
-            let curS1 = parseSector(0, from: timing["Sectors"])
-            let curS2 = parseSector(1, from: timing["Sectors"])
-            let curS3 = parseSector(2, from: timing["Sectors"])
-            
-            if debug_bool { print("🔢 delta for \(number): curS1=\(curS1) curS2=\(curS2) curS3=\(curS3) bestS1=\(bestS1) bestS2=\(bestS2) bestS3=\(bestS3)") }
-            
-            let sectorDelta: String = {
-                guard !curS1.isEmpty || !curS2.isEmpty else { return "" }
-                let hasSectors = !curS1.isEmpty || !curS2.isEmpty || !curS3.isEmpty
-                guard hasSectors else { return "" }
-                var cur = 0.0, best = 0.0
-                if !curS1.isEmpty && !bestS1.isEmpty { cur += toSeconds(curS1); best += toSeconds(bestS1) }
-                if !curS2.isEmpty && !bestS2.isEmpty { cur += toSeconds(curS2); best += toSeconds(bestS2) }
-                if !curS3.isEmpty && !bestS3.isEmpty { cur += toSeconds(curS3); best += toSeconds(bestS3) }
-                guard best > 0 else { return "" }
-                let d = cur - best
+
+            func bestSectorValue(_ index: Int) -> String {
+                guard index < bestSectorsRaw.count,
+                      let v = bestSectorsRaw[index]["Value"] as? String,
+                      !v.isEmpty else { return "" }
+                return v
+            }
+
+            let bestS1 = bestSectorValue(0)
+            let bestS2 = bestSectorValue(1)
+            let bestS3 = bestSectorValue(2)
+
+            func sectorDelta(current: String, best: String) -> String {
+                guard !current.isEmpty, !best.isEmpty else { return "" }
+                let d = toSeconds(current) - toSeconds(best)
+                guard abs(d) > 0.001 else { return "" }
                 return (d < 0 ? "" : "+") + String(format: "%.3f", d)
-            }()
+            }
+
+            let sectorDeltas: [String] = [
+                sectorDelta(current: s0, best: bestS1),
+                sectorDelta(current: s1, best: bestS2),
+                sectorDelta(current: s2, best: bestS3)
+            ]
+            
+//            if debug_bool { print("🔢 delta for \(number): curS1=\(curS1) curS2=\(curS2) curS3=\(curS3) bestS1=\(bestS1) bestS2=\(bestS2) bestS3=\(bestS3)") }
+//            
+//            let sectorDelta: String = {
+//                guard !curS1.isEmpty || !curS2.isEmpty else { return "" }
+//                let hasSectors = !curS1.isEmpty || !curS2.isEmpty || !curS3.isEmpty
+//                guard hasSectors else { return "" }
+//                var cur = 0.0, best = 0.0
+//                if !curS1.isEmpty && !bestS1.isEmpty { cur += toSeconds(curS1); best += toSeconds(bestS1) }
+//                if !curS2.isEmpty && !bestS2.isEmpty { cur += toSeconds(curS2); best += toSeconds(bestS2) }
+//                if !curS3.isEmpty && !bestS3.isEmpty { cur += toSeconds(curS3); best += toSeconds(bestS3) }
+//                guard best > 0 else { return "" }
+//                let d = cur - best
+//                return (d < 0 ? "" : "+") + String(format: "%.3f", d)
+//            }()
             if debug_bool { print("🟢 \(number) PersonalFastest raw=\(lastLapRaw["PersonalFastest"] ?? "nil")") }
             
             drivers.append(Driver(
@@ -90,7 +127,8 @@ class F1TimingParser {
                 bestLap: bestLapRaw["Value"] as? String ?? "",
                 isBestLap: (bestLapRaw["OverallFastest"] as? Bool) ?? ((bestLapRaw["OverallFastest"] as? Int) == 1),
                 segments: F1TimingParser.parseSegments(timing["Sectors"]),
-                sectorDelta: sectorDelta
+//                sectorDelta: sectorDelta
+                sectorDeltas: sectorDeltas
             ))
         }
         

@@ -11,31 +11,46 @@ struct MiniSectors: View {
     @AppStorage("isDark") private var isDark = false
 
     let segments: [[Int]]
-    let delta: String
+//    let delta: String
+    let sectorDeltas: [String]
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 1) {
+//        VStack(alignment: .leading, spacing: 1) {
             HStack(spacing: 2) {
                 ForEach(0..<3, id: \.self) { sectorIndex in
-                    HStack(spacing: 1) {
-                        ForEach(0..<segments[sectorIndex].count, id: \.self) { i in
-                            RoundedRectangle(cornerRadius: 1)
-                                .fill(colour(for: segments[sectorIndex][i]))
-                                .frame(width: 5, height: 10)
+//                    HStack(spacing: 1) {
+//                        ForEach(0..<segments[sectorIndex].count, id: \.self) { i in
+//                            RoundedRectangle(cornerRadius: 1)
+//                                .fill(colour(for: segments[sectorIndex][i]))
+//                                .frame(width: 5, height: 10)
+//                        }
+//                    }
+//                    if sectorIndex < 2 {
+//                        Spacer().frame(width: 3)
+//                    }
+                    VStack(alignment: .leading, spacing: 1) {
+                        HStack(spacing: 1) {
+                            ForEach(0..<segments[sectorIndex].count, id: \.self) { i in
+                                RoundedRectangle(cornerRadius: 1)
+                                    .fill(colour(for: segments[sectorIndex][i]))
+                                    .frame(width: 5, height: 10)
+                            }
                         }
-                    }
-                    if sectorIndex < 2 {
-                        Spacer().frame(width: 3)
+                        if sectorIndex < sectorDeltas.count {
+                            Text(sectorDeltas[sectorIndex].isEmpty ? "-0.000" : sectorDeltas[sectorIndex])
+                                .font(.system(size: 7, design: .monospaced))
+                                .foregroundStyle(sectorDeltas[sectorIndex].hasPrefix("+") ? .red : .green)
+                        }
                     }
                 }
             }
-            if !delta.isEmpty {
-                Text(delta)
-                    .font(.system(size: 7, design: .monospaced))
-                    .foregroundStyle(delta.hasPrefix("+") ? .red : .green)
-            }
+//            if !delta.isEmpty {
+//                Text(delta)
+//                    .font(.system(size: 7, design: .monospaced))
+//                    .foregroundStyle(delta.hasPrefix("+") ? .red : .green)
+//            }
         }
-    }
+//    }
 
     func colour(for status: Int) -> Color {
         switch status {

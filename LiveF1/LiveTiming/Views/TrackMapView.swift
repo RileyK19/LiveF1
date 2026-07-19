@@ -11,6 +11,11 @@ import SwiftUI
 struct TrackMapView: View {
     @ObservedObject var store: F1SessionStore
     @AppStorage("isDark") private var isDark = false
+    
+    @State private var trailGrid: [GridKey: [(x: Double, y: Double)]] = [:]
+    @State private var lastSessionPath: String?
+    private let minTrailSpacing: Double = 50
+    private var cellSize: Double { minTrailSpacing }
 
     private var positionedDrivers: [(driver: Driver, pos: CarPosition)] {
         store.drivers.compactMap { driver in
@@ -19,18 +24,31 @@ struct TrackMapView: View {
         }
     }
 
-    private var bounds: (minX: Double, maxX: Double, minZ: Double, maxZ: Double)? {
+    private var bounds: (minX: Double, maxX: Double, minY: Double, maxY: Double)? {
         let pts = positionedDrivers.map { $0.pos }
         guard !pts.isEmpty else { return nil }
         let xs = pts.map { $0.x }
-        let zs = pts.map { $0.z }
-        return (xs.min()!, xs.max()!, zs.min()!, zs.max()!)
+        let ys = pts.map { $0.y }
+        return (xs.min()!, xs.max()!, ys.min()!, ys.max()!)
+    }
+
+    private struct GridKey: Hashable {
+        let cx: Int
+        let cy: Int
     }
 
     var body: some View {
         GeometryReader { geo in
             ZStack {
-                if let b = bounds, b.maxX > b.minX, b.maxZ > b.minZ {
+                if let b = bounds, b.maxX > b.minX, b.maxY > b.minY {
+                    ForEach(Array(trailGrid.values.flatMap { $0 }.enumerated()), id: \.offset) { _, tp in
+                        let point = projected(CarPosition(x: tp.x, y: tp.y, z: 0, status: ""), in: geo.size, bounds: b)
+                        Circle()
+                            .fill(isDark ? Color.white.opacity(0.15) : Color.black.opacity(0.15))
+                            .frame(width: 3, height: 3)
+                            .position(point)
+                    }
+                    
                     ForEach(positionedDrivers, id: \.driver.id) { entry in
                         let point = projected(entry.pos, in: geo.size, bounds: b)
                         VStack(spacing: 2) {
@@ -55,19 +73,54 @@ struct TrackMapView: View {
         .padding()
         .background(isDark ? Color.white.opacity(0.05) : Color.black.opacity(0.05))
         .cornerRadius(12)
+        .onChange(of: store.updateCount) { _, _ in
+            for entry in positionedDrivers {
+                maybeAddTrailPoint(entry.pos)
+            }
+        }
+        .onChange(of: (store.rawTopics["SessionInfo"] as? [String: Any])?["Path"] as? String) { _, newPath in
+            guard newPath != lastSessionPath else { return }
+            lastSessionPath = newPath
+            trailGrid.removeAll()
+        }
     }
 
-    private func projected(_ pos: CarPosition, in size: CGSize, bounds b: (minX: Double, maxX: Double, minZ: Double, maxZ: Double)) -> CGPoint {
+    private func projected(_ pos: CarPosition, in size: CGSize, bounds b: (minX: Double, maxX: Double, minY: Double, maxY: Double)) -> CGPoint {
         let padding: CGFloat = 24
         let usableW = size.width - padding * 2
         let usableH = size.height - padding * 2
 
         let nx = (pos.x - b.minX) / (b.maxX - b.minX)
-        let nz = (pos.z - b.minZ) / (b.maxZ - b.minZ)
+        let ny = (pos.y - b.minY) / (b.maxY - b.minY)
 
         return CGPoint(
             x: padding + CGFloat(nx) * usableW,
-            y: padding + (1 - CGFloat(nz)) * usableH // flip so track orientation feels natural
+            y: padding + (1 - CGFloat(ny)) * usableH // flip so track orientation feels natural
         )
+    }
+    
+    private func gridKey(for x: Double, _ y: Double) -> GridKey {
+        GridKey(cx: Int(floor(x / cellSize)), cy: Int(floor(y / cellSize)))
+    }
+
+    private func maybeAddTrailPoint(_ p: CarPosition) {
+        let key = gridKey(for: p.x, p.y)
+
+        for dx in -1...1 {
+            for dy in -1...1 {
+                let neighborKey = GridKey(cx: key.cx + dx, cy: key.cy + dy)
+                if let points = trailGrid[neighborKey] {
+                    for existing in points {
+                        let ddx = existing.x - p.x
+                        let ddy = existing.y - p.y
+                        if (ddx * ddx + ddy * ddy) < (minTrailSpacing * minTrailSpacing) {
+                            return
+                        }
+                    }
+                }
+            }
+        }
+
+        trailGrid[key, default: []].append((x: p.x, y: p.y))
     }
 }

@@ -46,15 +46,15 @@ struct LiveConnectView: View {
                 .padding(.horizontal, 20)
                 
                 ConnectionRowCard(icon: "key", value: $token, title: "(Opt) F1TV Login", titleKey: token.isEmpty ? "Not logged in" : "Logged in", color: .blue, onPress: {
-                    showingBrowser = true
-                }, buttonTitle: token.isEmpty ? "Sign In" : "Log Out", onPressInfo: {
                     if token.isEmpty {
-                        showingInfo = true
+                        showingBrowser = true
                     } else {
                         TokenStore.clear()
                         token = ""
                         hasSavedToken = false
                     }
+                }, buttonTitle: token.isEmpty ? "Sign In" : "Log Out", onPressInfo: {
+                    showingInfo = true
                 })
                 .buttonStyle(.plain)
                 .padding(.horizontal, 20)

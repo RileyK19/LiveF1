@@ -63,10 +63,14 @@ class F1SessionStore: ObservableObject {
     }
     
     private func handle(topic: String, payload: [String: Any]) {
-        //        print("📨 \(topic)")
-        //        if topic == "TimingData" {
-        //            print("🏁 TimingData delta: \(String(describing: payload).prefix(200))")
-        //        }
+                print("📨 \(topic)")
+//                if topic == "TimingData" {
+//                    print("🏁 TimingData delta: \(String(describing: payload).prefix(200))")
+//                    print("🏁 TimingData delta: \(String(describing: payload))")
+//                }
+                if topic == "TimingStats" {
+                    print("🏁 TimingStats delta: \(String(describing: payload))")
+                }
         if topic == "TeamRadio" {
             print("📻 TeamRadio payload: \(payload)")
         }

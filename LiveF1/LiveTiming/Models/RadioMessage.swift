@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-struct RadioMessage: Identifiable {
+struct RadioMessage: Identifiable, Hashable {
     let id: String  // Utc timestamp
     let driverNumber: String
     let driverTla: String

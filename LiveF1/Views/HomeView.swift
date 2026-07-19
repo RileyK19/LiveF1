@@ -273,6 +273,20 @@ struct HomeView: View {
                         .buttonStyle(.plain)
                     }
                     .padding(.horizontal, 20)
+                    
+                    NavigationLink {
+                        WeatherView()
+                            .environmentObject(championshipStore)
+                    } label: {
+                        RowCard(
+                            icon: "cloud.sun.fill",
+                            title: "Track Weather",
+                            subtitle: "Session forecast",
+                            color: .blue
+                        )
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.horizontal, 20)
 
                     Text("LiveF1 · Race Control")
                         .font(.system(size: 11))

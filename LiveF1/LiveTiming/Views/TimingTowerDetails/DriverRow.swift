@@ -45,7 +45,8 @@ struct DriverRow: View {
                 .frame(width: 60, alignment: .trailing)
                 .foregroundStyle(.gray)
 
-            MiniSectors(segments: driver.segments, delta: driver.sectorDelta)
+//            MiniSectors(segments: driver.segments, delta: driver.sectorDelta)
+            MiniSectors(segments: driver.segments, sectorDeltas: driver.sectorDeltas)
                 .frame(width: 150, alignment: .leading)
 
             HStack(spacing: 2) {
