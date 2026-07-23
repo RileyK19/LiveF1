@@ -13,12 +13,14 @@ import Combine
 
 struct LiveConnectView: View {
     @ObservedObject var store: F1SessionStore
+    @StateObject var trackerVM: TrackMapViewModel = TrackMapViewModel()
     @State private var token: String = ""
     @State private var liveClient: F1TimingClient?
     @State private var showingBrowser = false
     @State private var hasSavedToken = TokenStore.load() != nil
     @State private var delay: Int = 0
     @State private var showingInfo = false
+    @FocusState private var focus: Bool
     var statusText: String {
         switch store.connectionState {
         case .disconnected: return "Disconnected"
@@ -38,7 +40,7 @@ struct LiveConnectView: View {
                     }
                     .buttonStyle(.plain)
                     
-                    NavigationLink { TrackMapView(store: store) } label: {
+                    NavigationLink { TrackMapView(store: store, VM: trackerVM) } label: {
                         SquircleCard(icon: "map", title: "Driver Tracker", subtitle: "Track map of driver positions", color: .orange)
                     }
                     .buttonStyle(.plain)
@@ -61,16 +63,24 @@ struct LiveConnectView: View {
                 
                 DelayRowCard(icon: "clock", value: $delay, titleKey: "Enter delay amount", color: .purple, onPress: {
                     store.setDelay(TimeInterval(delay))
-                }, buttonTitle: "Set delay")
+                    focus = false
+                }, buttonTitle: "Set delay", focus: $focus)
                 .buttonStyle(.plain)
                 .padding(.horizontal, 20)
                 
-                ReconnectRowCard(icon: "arrow.counterclockwise.circle", value: statusText, titleKey: "Connection Status",
+                ReconnectRowCard(icon: "arrow.counterclockwise.circle", value: statusText,
+                                 titleKey: "Connection Status",
                                  color: statusText == "Connected" ? .green : statusText == "Disconnected" ? .red : .orange,
-                                 onPress: { connect() }, buttonTitle: "Reconnect")
+                                 onPress: {
+                    connect()
+                    trackerVM.reset()
+                }, buttonTitle: "Reconnect")
                 .buttonStyle(.plain)
                 .padding(.horizontal, 20)
 
+            }
+            .onTapGesture {
+                focus = false
             }
             
 //            Text("Sign in to F1TV for telemetry")
@@ -244,6 +254,7 @@ private struct DelayRowCard: View {
     let color: Color
     var onPress: ()->Void
     let buttonTitle: String
+    var focus: FocusState<Bool>.Binding
 
     var body: some View {
         HStack(spacing: 16) {
@@ -259,6 +270,7 @@ private struct DelayRowCard: View {
                     .font(.system(size: 13, weight: .black, design: .rounded))
                     .foregroundStyle(.secondary)
                     .foregroundColor(color)
+                    .focused(focus)
             }
             Spacer()
             

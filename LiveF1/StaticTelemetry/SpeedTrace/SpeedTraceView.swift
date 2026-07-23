@@ -58,6 +58,16 @@ struct SpeedTraceView: View {
                         .chartScrollableAxes(.horizontal)
                         .chartXVisibleDomain(length: zoom)
                         .chartScrollPosition(x: $scrollPosition)
+                        
+                        Text("Gear").font(.caption).foregroundStyle(.secondary)
+                        Chart(viewModel.samples) {
+                            LineMark(x: .value("Elapsed", $0.elapsed), y: .value("Gear", $0.gear ?? 0))
+                                .foregroundStyle(by: .value("Lap", $0.label))
+                        }
+                        .frame(height: 90)
+                        .chartScrollableAxes(.horizontal)
+                        .chartXVisibleDomain(length: zoom)
+                        .chartScrollPosition(x: $scrollPosition)
 
                         // Simplest possible zoom control: a slider
                         Slider(value: $zoom, in: 1...(viewModel.samples.map(\.elapsed).max() ?? 60))

@@ -168,6 +168,7 @@ struct HomeView: View {
     @AppStorage("isDark") var isDark = false
     @State private var showingSettings = false
     @State private var mode: AppMode = .live
+    @State private var hasLiveSession = false
     
     enum AppMode { case live, replay, documents, predictor }
 
@@ -192,8 +193,8 @@ struct HomeView: View {
                         FeaturedCard(
                             icon: "antenna.radiowaves.left.and.right",
                             title: "Live Timing",
-                            badge: "ON AIR",
-                            color: .red
+                            badge: hasLiveSession ? "ON AIR" : "OFFLINE",
+                            color: hasLiveSession ? .red : .gray
                         )
                     }
                     .buttonStyle(.plain)
@@ -310,8 +311,31 @@ struct HomeView: View {
 //                SettingsView(mode: $mode, store: store)
                 SettingsView(store: store)
             }
+            .onAppear {
+                checkForLiveSession { isLive in
+                    DispatchQueue.main.async {
+                        self.hasLiveSession = isLive
+                    }
+                }
+            }
         }
         .preferredColorScheme(isDark ? .dark : .light)
+    }
+    
+    private func checkForLiveSession(completion: @escaping (Bool) -> Void) {
+        let url = URL(string: "https://api.openf1.org/v1/sessions?session_key=latest")!
+
+        URLSession.shared.dataTask(with: url) { data, _, _ in
+            guard let data = data,
+                  let json = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]],
+                  let session = json.first,
+                  let endString = session["date_end"] as? String,
+                  let end = ISO8601DateFormatter().date(from: endString) else {
+                completion(false)
+                return
+            }
+            completion(Date() < end)
+        }.resume()
     }
 }
 

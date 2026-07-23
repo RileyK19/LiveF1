@@ -54,8 +54,13 @@ struct LapTimeChartView: View {
                         adjustedChartPage
                             .tag(ChartPage.adjusted)
                     }
-                    .tabViewStyle(.page(indexDisplayMode: .always))
+                    .tabViewStyle(.page(indexDisplayMode: .automatic))
                     .frame(height: 340)
+                    .indexViewStyle(.page(backgroundDisplayMode: .automatic))
+                    .onAppear {
+                        UIPageControl.appearance().currentPageIndicatorTintColor = .label
+                        UIPageControl.appearance().pageIndicatorTintColor = UIColor.label.withAlphaComponent(0.2)
+                    }
 
                     compoundLegend
                         .padding(.horizontal)

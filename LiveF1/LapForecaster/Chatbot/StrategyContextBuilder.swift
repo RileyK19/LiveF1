@@ -75,7 +75,7 @@ struct StrategyContextBuilder {
         stints: [F1PredictorStint],
         selectedDriver: Int
     ) -> StrategyContext {
-        let totalLaps = laps.map { $0.lapNumber }.max() ?? 0
+        let totalLaps = laps.filter { $0.lapDuration != nil }.map { $0.lapNumber }.max() ?? 0
         let allDriverNumbers = Array(Set(stints.map { $0.driverNumber })).sorted()
 
         // Build per driver strategies

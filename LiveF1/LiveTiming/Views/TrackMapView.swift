@@ -12,10 +12,12 @@ struct TrackMapView: View {
     @ObservedObject var store: F1SessionStore
     @AppStorage("isDark") private var isDark = false
     
-    @State private var trailGrid: [GridKey: [(x: Double, y: Double)]] = [:]
-    @State private var lastSessionPath: String?
-    private let minTrailSpacing: Double = 50
-    private var cellSize: Double { minTrailSpacing }
+//    @State private var trailGrid: [GridKey: [(x: Double, y: Double)]] = [:]
+//    @State private var lastSessionPath: String?
+//    private let minTrailSpacing: Double = 50
+//    private var cellSize: Double { minTrailSpacing }
+    
+    @ObservedObject var VM: TrackMapViewModel
 
     private var positionedDrivers: [(driver: Driver, pos: CarPosition)] {
         store.drivers.compactMap { driver in
@@ -32,16 +34,11 @@ struct TrackMapView: View {
         return (xs.min()!, xs.max()!, ys.min()!, ys.max()!)
     }
 
-    private struct GridKey: Hashable {
-        let cx: Int
-        let cy: Int
-    }
-
     var body: some View {
         GeometryReader { geo in
             ZStack {
                 if let b = bounds, b.maxX > b.minX, b.maxY > b.minY {
-                    ForEach(Array(trailGrid.values.flatMap { $0 }.enumerated()), id: \.offset) { _, tp in
+                    ForEach(Array(VM.trailGrid.values.flatMap { $0 }.enumerated()), id: \.offset) { _, tp in
                         let point = projected(CarPosition(x: tp.x, y: tp.y, z: 0, status: ""), in: geo.size, bounds: b)
                         Circle()
                             .fill(isDark ? Color.white.opacity(0.15) : Color.black.opacity(0.15))
@@ -79,9 +76,9 @@ struct TrackMapView: View {
             }
         }
         .onChange(of: (store.rawTopics["SessionInfo"] as? [String: Any])?["Path"] as? String) { _, newPath in
-            guard newPath != lastSessionPath else { return }
-            lastSessionPath = newPath
-            trailGrid.removeAll()
+            guard newPath != VM.lastSessionPath else { return }
+            VM.lastSessionPath = newPath
+            VM.trailGrid.removeAll()
         }
     }
 
@@ -100,7 +97,7 @@ struct TrackMapView: View {
     }
     
     private func gridKey(for x: Double, _ y: Double) -> GridKey {
-        GridKey(cx: Int(floor(x / cellSize)), cy: Int(floor(y / cellSize)))
+        GridKey(cx: Int(floor(x / VM.cellSize)), cy: Int(floor(y / VM.cellSize)))
     }
 
     private func maybeAddTrailPoint(_ p: CarPosition) {
@@ -109,11 +106,11 @@ struct TrackMapView: View {
         for dx in -1...1 {
             for dy in -1...1 {
                 let neighborKey = GridKey(cx: key.cx + dx, cy: key.cy + dy)
-                if let points = trailGrid[neighborKey] {
+                if let points = VM.trailGrid[neighborKey] {
                     for existing in points {
                         let ddx = existing.x - p.x
                         let ddy = existing.y - p.y
-                        if (ddx * ddx + ddy * ddy) < (minTrailSpacing * minTrailSpacing) {
+                        if (ddx * ddx + ddy * ddy) < (VM.minTrailSpacing * VM.minTrailSpacing) {
                             return
                         }
                     }
@@ -121,6 +118,6 @@ struct TrackMapView: View {
             }
         }
 
-        trailGrid[key, default: []].append((x: p.x, y: p.y))
+        VM.trailGrid[key, default: []].append((x: p.x, y: p.y))
     }
 }

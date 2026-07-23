@@ -115,8 +115,11 @@ class RaceViewModel: ObservableObject {
             async let fetchedLaps = F1LapParser.fetchLive(sessionKey: "\(session.sessionKey)")
             async let fetchedStints = F1PredictorStintParser.fetch(sessionKey: "\(session.sessionKey)")
             let (l, s) = try await (fetchedLaps, fetchedStints)
-            laps = l
-            stints = s
+            laps = l.filter { $0.lapDuration != nil }
+            stints = s.filter {
+                guard let end = $0.lapEnd else { return false }
+                return $0.lapStart < end
+            }
             // Default to first driver
             selectedDriverNumber = drivers.first
         } catch {

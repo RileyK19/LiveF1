@@ -30,12 +30,33 @@ struct LapPickerView: View {
             } else {
                 ZStack {
                     VStack(spacing: 0) {
-                        Picker("Driver", selection: $viewModel.selectedDriverNumber) {
-                            ForEach(viewModel.drivers, id: \.self) { driver in
-                                Text("#\(driver)").tag(Optional(driver))
+                        
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 8) {
+                                
+                                ForEach(viewModel.drivers, id: \.self) { driver in
+                                    Button {
+                                        viewModel.selectedDriverNumber = driver
+                                    } label: {
+                                        Text("#\(driver)").tag(Optional(driver))
+                                            .font(.caption.weight(.medium))
+                                            .padding(.horizontal, 12)
+                                            .padding(.vertical, 6)
+                                            .background(viewModel.selectedDriverNumber == driver ? Color.accentColor : Color(.secondarySystemBackground))
+                                            .foregroundStyle(viewModel.selectedDriverNumber == driver ? .white : .primary)
+                                            .clipShape(Capsule())
+                                    }
+                                    .buttonStyle(.plain)
+                                }
                             }
                         }
-                        .pickerStyle(.menu)
+                        
+//                        Picker("Driver", selection: $viewModel.selectedDriverNumber) {
+//                            ForEach(viewModel.drivers, id: \.self) { driver in
+//                                Text("#\(driver)").tag(Optional(driver))
+//                            }
+//                        }
+//                        .pickerStyle(.menu)
                         .padding()
                         
                         List(viewModel.lapsForSelectedDriver) { lap in

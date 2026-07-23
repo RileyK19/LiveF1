@@ -19,6 +19,7 @@ class SpeedTraceViewModel: ObservableObject {
         let speed: Int?
         let throttle: Int?
         let brake: Int?
+        let gear: Int?
     }
 
     @Published var samples: [Sample] = []
@@ -50,7 +51,8 @@ class SpeedTraceViewModel: ObservableObject {
                         elapsed: $0.date.timeIntervalSince(start),
                         speed: $0.speed,
                         throttle: $0.throttle,
-                        brake: $0.brake
+                        brake: $0.brake,
+                        gear: $0.nGear
                     )
                 })
             } catch {

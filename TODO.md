@@ -5,9 +5,11 @@
     -> (FIXED I THINK??) not updating ?
 - (DONE) old dots in driver tracker stay there to show track 
     - (DONE) if near another then ignore
-    -> move to VM
-- top bar on lap picker make driver selector like the session filter
+    -> (DONE) move to VM
+- (DONE) top bar on lap picker make driver selector like the session filter
 - (DONE) f1tv sign out button was weird
 - bold widget font
-- weatherkit
-- voice stuff
+- (DONE) weatherkit
+- voice stuff / app intents
+- (DONE) gears on speed trace
+- results tab? 

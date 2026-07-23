@@ -16,7 +16,7 @@ struct ManualStrategyView: View {
     @State private var showResult = false
 
     var totalLaps: Int {
-        viewModel.laps.map { $0.lapNumber }.max() ?? 78
+        viewModel.laps.filter { $0.lapDuration != nil }.map { $0.lapNumber }.max() ?? 78
     }
     
     private var driverComparisonPicker: some View {
@@ -337,7 +337,7 @@ struct StintEditorRow: View {
                     Text("Pit out")
                         .font(.caption2)
                         .foregroundStyle(.tertiary)
-                    Stepper("Lap \(stint.lapEnd)", value: $stint.lapEnd, in: max(stint.lapStart + 1, 2)...totalLaps)
+                    Stepper("Lap \(stint.lapEnd)", value: $stint.lapEnd, in: min(max(stint.lapStart + 1, 2), totalLaps)...totalLaps)
                         .labelsHidden()
                     Text("Lap \(stint.lapEnd)")
                         .font(.caption)
