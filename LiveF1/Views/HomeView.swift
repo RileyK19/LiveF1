@@ -269,7 +269,7 @@ struct HomeView: View {
                             ChampionshipStandingsView()
                                 .environmentObject(championshipStore)
                         } label: {
-                            SquircleCard(icon: "trophy.fill", title: "Standings", subtitle: "Drivers & teams", color: .yellow)
+                            SquircleCard(icon: "trophy.fill", title: "Results", subtitle: "Drivers & teams", color: .yellow)
                         }
                         .buttonStyle(.plain)
                     }

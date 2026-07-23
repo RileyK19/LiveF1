@@ -12,4 +12,6 @@
 - (DONE) weatherkit
 - voice stuff / app intents
 - (DONE) gears on speed trace
-- results tab? 
+- (DONE) results tab? 
+- make podium colors in results tab 
+- results spoiler warning

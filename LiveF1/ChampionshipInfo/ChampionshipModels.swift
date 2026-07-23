@@ -24,7 +24,15 @@ struct ChampionshipRaceTable: Codable {
     enum CodingKeys: String, CodingKey { case season; case races = "Races" }
 }
 
-struct ChampionshipRace: Codable, Identifiable {
+struct ChampionshipRace: Codable, Identifiable, Hashable {
+    static func == (lhs: ChampionshipRace, rhs: ChampionshipRace) -> Bool {
+        lhs.id == rhs.id
+    }
+    
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+    }
+    
     var id: String { round }
     let round: String
     let raceName: String
@@ -250,5 +258,42 @@ struct ChampionshipCacheEntry<T: Codable>: Codable {
 
     var isExpired: Bool {
         Date().timeIntervalSince(timestamp) > 3600
+    }
+}
+
+struct ChampionshipRaceResult: Codable, Identifiable {
+    var id: String { position }
+    let position: String
+    let points: String
+    let driverName: String
+    let constructorName: String
+    let status: String
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        position = try container.decode(String.self, forKey: .position)
+        points = try container.decode(String.self, forKey: .points)
+        status = try container.decode(String.self, forKey: .status)
+
+        let driver = try container.decode(ChampionshipDriver.self, forKey: .driver)
+        driverName = driver.fullName
+
+        let constructor = try container.decode(ChampionshipConstructor.self, forKey: .constructor)
+        constructorName = constructor.name
+    }
+    
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(position, forKey: .position)
+        try container.encode(points, forKey: .points)
+        try container.encode(status, forKey: .status)
+        try container.encode(driverName, forKey: .driver)       // flat re-encode
+        try container.encode(constructorName, forKey: .constructor)
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case position, points, status
+        case driver = "Driver"
+        case constructor = "Constructor"
     }
 }

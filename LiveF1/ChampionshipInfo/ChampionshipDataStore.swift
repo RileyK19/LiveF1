@@ -16,6 +16,7 @@ final class ChampionshipDataStore: ObservableObject {
     @Published var races: [ChampionshipRace] = []
     @Published var driverStandings: [ChampionshipDriverStanding] = []
     @Published var constructorStandings: [ChampionshipConstructorStanding] = []
+    @Published var raceResults: [ChampionshipRaceResult] = []
     @Published var isLoadingSchedule = false
     @Published var isLoadingStandings = false
     @Published var error: String?
@@ -32,6 +33,7 @@ final class ChampionshipDataStore: ObservableObject {
         static let driverStandings = "f1_cache_driver_standings"
         static let constructorStandings = "f1_cache_constructor_standings"
         static let lastUpdated = "f1_cache_last_updated"
+        static let raceResults = "f1_cache_race_results"
     }
 
     // MARK: - Init
@@ -142,6 +144,37 @@ final class ChampionshipDataStore: ObservableObject {
             updateLastUpdated()
         } catch {
             self.error = "Constructor standings: \(error.localizedDescription)"
+        }
+    }
+    
+    func fetchRaceResults(round: String, forceRefresh: Bool = false) async {
+        let cacheKey = "\(CacheKey.raceResults)_\(round)"
+
+        if !forceRefresh, let cached: [ChampionshipRaceResult] = loadCache(key: cacheKey) {
+            self.raceResults = cached
+            return
+        }
+
+        do {
+            let url = URL(string: "\(base)/\(season)/\(round)/results.json")!
+            let (data, _) = try await URLSession.shared.data(from: url)
+
+            let json = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+            let mrData = json?["MRData"] as? [String: Any]
+            let raceTable = mrData?["RaceTable"] as? [String: Any]
+            let races = raceTable?["Races"] as? [[String: Any]]
+            let resultsArray = races?.first?["Results"] as? [[String: Any]] ?? []
+
+            let results = try resultsArray.map { obj -> ChampionshipRaceResult in
+                let itemData = try JSONSerialization.data(withJSONObject: obj)
+                return try JSONDecoder().decode(ChampionshipRaceResult.self, from: itemData)
+            }
+
+            self.raceResults = results
+            saveCache(results, key: cacheKey)
+            updateLastUpdated()
+        } catch {
+            self.error = "Race results: \(error.localizedDescription)"
         }
     }
 
