@@ -239,8 +239,19 @@ class F1SessionStore: ObservableObject {
                 return
             }
             
+//            let request = SFSpeechURLRecognitionRequest(url: tempURL)
+//            request.shouldReportPartialResults = false
+            
             let request = SFSpeechURLRecognitionRequest(url: tempURL)
             request.shouldReportPartialResults = false
+
+            if #available(iOS 16, *) {
+                request.addsPunctuation = true
+            }
+
+            if #available(iOS 13, *) {
+                request.requiresOnDeviceRecognition = false
+            }
             
             let result: String? = await withCheckedContinuation { continuation in
                 var resumed = false

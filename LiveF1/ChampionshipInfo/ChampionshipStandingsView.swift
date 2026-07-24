@@ -228,11 +228,12 @@ private struct RaceResultRow: View {
         HStack(spacing: 12) {
             Text(result.position)
                 .font(.system(.body, design: .rounded).weight(.bold))
-                .foregroundStyle(position <= 3 ? .primary : .secondary)
+                .foregroundStyle(position <= 3 ? Color(hex: result.teamColor) : .secondary)
                 .frame(width: 28, alignment: .center)
 
             RoundedRectangle(cornerRadius: 2)
-                .fill(didFinish ? Color.secondary.opacity(0.4) : Color.red.opacity(0.5))
+                .fill(Color(hex: result.teamColor))
+                .opacity(didFinish ? 1.0 : 0.5)
                 .frame(width: 3, height: 40)
 
             VStack(alignment: .leading, spacing: 3) {
@@ -266,54 +267,65 @@ private struct RaceResultRow: View {
 private struct RaceResultsTab: View {
     @EnvironmentObject var store: ChampionshipDataStore
     @State private var selectedRound: String?
+    @State private var showSpoilerWarning = true
+    @State private var contentUnlocked = false
 
     var pastRaces: [ChampionshipRace] {
         store.races.filter { $0.isPast }
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
-                    ForEach(pastRaces, id: \.self) { race in
-                        Button {
-                            selectedRound = race.round as String?
-                        } label: {
-                            Text(race.raceName)
-                                .font(.caption.weight(.medium))
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 6)
-                                .background(selectedRound == race.round ? Color.accentColor : Color(.secondarySystemBackground))
-                                .foregroundStyle(selectedRound == race.round ? .white : .primary)
-                                .clipShape(Capsule())
+        Group {
+            if contentUnlocked {
+                VStack(spacing: 0) {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
+                            ForEach(pastRaces, id: \.self) { race in
+                                Button {
+                                    selectedRound = race.round as String?
+                                } label: {
+                                    Text(race.raceName)
+                                        .font(.caption.weight(.medium))
+                                        .padding(.horizontal, 12)
+                                        .padding(.vertical, 6)
+                                        .background(selectedRound == race.round ? Color.accentColor : Color(.secondarySystemBackground))
+                                        .foregroundStyle(selectedRound == race.round ? .white : .primary)
+                                        .clipShape(Capsule())
+                                }
+                                .buttonStyle(.plain)
+                            }
                         }
-                        .buttonStyle(.plain)
+                        .padding(10)
+                    }
+                    
+                    if store.raceResults.isEmpty {
+                        Spacer()
+                        ProgressView("Loading results…")
+                        Spacer()
+                    } else {
+                        List {
+                            ForEach(store.raceResults) { result in
+                                RaceResultRow(result: result)
+                            }
+                        }
+                        .listStyle(.plain)
                     }
                 }
-                .padding(10)
-            }
-
-            if store.raceResults.isEmpty {
-                Spacer()
-                ProgressView("Loading results…")
-                Spacer()
+                .onAppear {
+                    if selectedRound == nil {
+                        selectedRound = pastRaces.last?.round
+                    }
+                }
+                .onChange(of: selectedRound) { _, newRound in
+                    guard let newRound else { return }
+                    Task { await store.fetchRaceResults(round: newRound) }
+                }
             } else {
-                List {
-                    ForEach(store.raceResults) { result in
-                        RaceResultRow(result: result)
-                    }
-                }
-                .listStyle(.plain)
+                Color.clear
             }
         }
-        .onAppear {
-            if selectedRound == nil {
-                selectedRound = pastRaces.last?.round
-            }
-        }
-        .onChange(of: selectedRound) { _, newRound in
-            guard let newRound else { return }
-            Task { await store.fetchRaceResults(round: newRound) }
+        .spoilerWarning(isPresented: $showSpoilerWarning, title: "Race Results") {
+            contentUnlocked = true
         }
     }
 }

@@ -321,22 +321,37 @@ struct HomeView: View {
         }
         .preferredColorScheme(isDark ? .dark : .light)
     }
-    
-    private func checkForLiveSession(completion: @escaping (Bool) -> Void) {
-        let url = URL(string: "https://api.openf1.org/v1/sessions?session_key=latest")!
+}
 
-        URLSession.shared.dataTask(with: url) { data, _, _ in
-            guard let data = data,
-                  let json = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]],
-                  let session = json.first,
-                  let endString = session["date_end"] as? String,
-                  let end = ISO8601DateFormatter().date(from: endString) else {
-                completion(false)
-                return
-            }
+func checkForLiveSession(completion: @escaping (Bool) -> Void) {
+    let url = URL(string: "https://api.openf1.org/v1/sessions?session_key=latest")!
+
+    URLSession.shared.dataTask(with: url) { data, _, error in
+        guard let data = data, error == nil else {
+            completion(false)
+            return
+        }
+
+        // During a live session the API returns:
+        // {"detail":"Live F1 session in progress..."}
+        if let dict = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+           let detail = dict["detail"] as? String,
+           detail.contains("Live F1 session in progress") {
+            completion(true)
+            return
+        }
+
+        // Otherwise parse the normal response
+        if let sessions = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]],
+           let session = sessions.first,
+           let endString = session["date_end"] as? String,
+           let end = ISO8601DateFormatter().date(from: endString) {
             completion(Date() < end)
-        }.resume()
-    }
+            return
+        }
+
+        completion(false)
+    }.resume()
 }
 
 #Preview {

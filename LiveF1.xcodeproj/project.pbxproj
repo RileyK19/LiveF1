@@ -103,6 +103,7 @@
 				ChampionshipInfo/F1DBTrackSVGs/suzuka.svg,
 				ChampionshipInfo/F1DBTrackSVGs/zandvoort.svg,
 				LiveTiming/Models/ColorHelper.swift,
+				Views/SpoilerWarningView.swift,
 			);
 			target = 58CA574E2FF7813A00772EAB /* LiveF1WidgetExtension */;
 		};

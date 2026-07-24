@@ -197,13 +197,7 @@ struct ChampionshipDriverStanding: Codable, Identifiable {
     }
 
     var teamColor: String {
-        let colors: [String: String] = [
-            "red_bull": "#3671C6", "ferrari": "#E8002D", "mercedes": "#27F4D2",
-            "mclaren": "#FF8000", "aston_martin": "#229971", "alpine": "#FF87BC",
-            "williams": "#64C4FF", "rb": "#6692FF", "kick_sauber": "#52E252",
-            "haas": "#B6BABD"
-        ]
-        return colors[constructors.first?.constructorId ?? ""] ?? "#888888"
+        return constrToColor(constructors.first?.constructorId ?? "")
     }
 }
 
@@ -236,13 +230,7 @@ struct ChampionshipConstructorStanding: Codable, Identifiable {
     }
 
     var teamColor: String {
-        let colors: [String: String] = [
-            "red_bull": "#3671C6", "ferrari": "#E8002D", "mercedes": "#27F4D2",
-            "mclaren": "#FF8000", "aston_martin": "#229971", "alpine": "#FF87BC",
-            "williams": "#64C4FF", "rb": "#6692FF", "kick_sauber": "#52E252",
-            "haas": "#B6BABD"
-        ]
-        return colors[constructor.constructorId] ?? "#888888"
+        return constrToColor(constructor.constructorId)
     }
 }
 
@@ -262,38 +250,38 @@ struct ChampionshipCacheEntry<T: Codable>: Codable {
 }
 
 struct ChampionshipRaceResult: Codable, Identifiable {
+    static func == (lhs: ChampionshipRaceResult, rhs: ChampionshipRaceResult) -> Bool {
+        lhs.id == rhs.id
+    }
+    
     var id: String { position }
     let position: String
     let points: String
-    let driverName: String
-    let constructorName: String
     let status: String
-    
-    init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        position = try container.decode(String.self, forKey: .position)
-        points = try container.decode(String.self, forKey: .points)
-        status = try container.decode(String.self, forKey: .status)
-
-        let driver = try container.decode(ChampionshipDriver.self, forKey: .driver)
-        driverName = driver.fullName
-
-        let constructor = try container.decode(ChampionshipConstructor.self, forKey: .constructor)
-        constructorName = constructor.name
-    }
-    
-    func encode(to encoder: Encoder) throws {
-        var container = encoder.container(keyedBy: CodingKeys.self)
-        try container.encode(position, forKey: .position)
-        try container.encode(points, forKey: .points)
-        try container.encode(status, forKey: .status)
-        try container.encode(driverName, forKey: .driver)       // flat re-encode
-        try container.encode(constructorName, forKey: .constructor)
-    }
+    let driver: ChampionshipDriver
+    let constructor: ChampionshipConstructor
 
     enum CodingKeys: String, CodingKey {
         case position, points, status
         case driver = "Driver"
         case constructor = "Constructor"
     }
+
+    // Convenience accessors so existing call sites (driverName / constructorName) still work
+    var driverName: String { driver.fullName }
+    var constructorName: String { constructor.name }
+
+    var teamColor: String {
+        return constrToColor(constructor.constructorId)
+    }
+}
+
+private func constrToColor(_ constructor: String) -> String {
+    let colors: [String: String] = [
+        "red_bull": "#3671C6", "ferrari": "#E8002D", "mercedes": "#27F4D2",
+        "mclaren": "#FF8000", "aston_martin": "#229971", "alpine": "#FF87BC",
+        "williams": "#64C4FF", "rb": "#6692FF", "audi": "#F50537",
+        "haas": "#B6BABD"
+    ]
+    return colors[constructor] ?? "#888888"
 }
