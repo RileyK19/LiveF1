@@ -75,6 +75,7 @@
 				ChampionshipInfo/ChampionshipModels.swift,
 				ChampionshipInfo/ChampionshipScheduleView.swift,
 				ChampionshipInfo/ChampionshipStandingsView.swift,
+				ChampionshipInfo/ChampionshipTrackColors.swift,
 				ChampionshipInfo/ChampionshipTrackView.swift,
 				"ChampionshipInfo/F1DBTrackSVGs/abu-dhabi.svg",
 				ChampionshipInfo/F1DBTrackSVGs/austin.svg,

@@ -11,14 +11,27 @@ import PocketSVG
 struct ChampionshipTrackView: View {
     var trackName: String
     @State private var path: CGPath? = nil
+    
+    var width: CGFloat = 35
+    var height: CGFloat = 35
+    var primary: Color = Color.black
+    var secondary: Color? = nil
 
     var body: some View {
         VStack {
 
             if let path = path {
-                ChampionshipTrackShape(cgPath: path)
-                    .stroke(Color.black, lineWidth: 2)
-                    .frame(width: 35, height: 35)
+                ZStack {
+                    if let secondary = secondary {
+                        ChampionshipTrackShape(cgPath: path)
+                            .stroke(secondary, lineWidth: 4)
+                            .frame(width: width, height: height)
+                    }
+                    
+                    ChampionshipTrackShape(cgPath: path)
+                        .stroke(primary, lineWidth: 2)
+                        .frame(width: width, height: height)
+                }
             }
         }
         .onAppear {

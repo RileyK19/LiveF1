@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import WidgetKit
 
 struct NextSessionRectangularView: View {
     let entry: NextSessionEntry
@@ -19,15 +20,17 @@ struct NextSessionRectangularView: View {
     var body: some View {
         if let race = entry.race {
             VStack(alignment: .leading, spacing: 2) {
-                Text("\(race.flagEmoji) \(race.raceName)")
-                    .font(.system(size: 10, weight: .semibold))
+                Text("\(race.flagEmoji) \(race.raceName.replacingOccurrences(of: "Grand Prix", with: "GP"))")
+                    .font(.system(size: 13, weight: .bold))
                     .lineLimit(1)
+                    .widgetAccentable()
 
                 HStack(spacing: 8) {
                     ForEach(keySessions(for: race), id: \.name) { s in
                         VStack(spacing: 0) {
                             Text(s.short)
-                                .font(.system(size: 9, weight: .bold))
+                                .font(.system(size: 13, weight: .bold))
+                                .widgetAccentable()
                             Text(s.time)
                                 .font(.system(size: 10, weight: .medium))
                         }
@@ -47,7 +50,7 @@ struct NextSessionRectangularView: View {
             let isNext = s.name == entry.sessionName
             let short = shortName(for: s.name)
 
-            let alwaysShow = (s.name.lowercased().contains("qualifying") && !s.name.lowercased().contains("sprint"))
+            let alwaysShow = (s.name.lowercased().contains("quali") && race.sprint == nil)
                 || s.name.lowercased().contains("sprint")
                 || s.name.lowercased().contains("race")
 

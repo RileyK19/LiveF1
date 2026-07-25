@@ -19,12 +19,16 @@ struct NextSessionWidgetContent: View {
             NextSessionSmallView(entry: entry)
         case .systemMedium:
             NextRaceSessionsView(entry: entry)
+                .containerBackground(.regularMaterial, for: .widget)
         case .accessoryCircular:
             NextSessionCircularView(entry: entry)
+                .containerBackground(.regularMaterial, for: .widget)
         case .accessoryRectangular:
             NextSessionRectangularView(entry: entry)
+                .containerBackground(.regularMaterial, for: .widget)
         case .accessoryInline:
             NextSessionInlineView(entry: entry)
+                .containerBackground(.regularMaterial, for: .widget)
         default:
             NextSessionSmallView(entry: entry)
         }
@@ -37,7 +41,7 @@ struct NextSessionWidget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: NextSessionProvider()) { entry in
             NextSessionWidgetContent(entry: entry)
-                .containerBackground(.regularMaterial, for: .widget)
+//                .containerBackground(.regularMaterial, for: .widget)
         }
         .configurationDisplayName("Next F1 Session")
         .description("Countdown to the next session and race schedule.")
