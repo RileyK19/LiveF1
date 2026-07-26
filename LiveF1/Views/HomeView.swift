@@ -320,6 +320,10 @@ struct HomeView: View {
             }
         }
         .preferredColorScheme(isDark ? .dark : .light)
+        .task {
+            await championshipStore.fetchAllIfNeeded()
+            await championshipStore.scheduleNotificationsForNextRace()
+        }
     }
 }
 

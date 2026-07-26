@@ -103,6 +103,7 @@
 				ChampionshipInfo/F1DBTrackSVGs/spielberg.svg,
 				ChampionshipInfo/F1DBTrackSVGs/suzuka.svg,
 				ChampionshipInfo/F1DBTrackSVGs/zandvoort.svg,
+				ChampionshipInfo/SessionNotificationManager.swift,
 				LiveTiming/Models/ColorHelper.swift,
 				Views/SpoilerWarningView.swift,
 			);

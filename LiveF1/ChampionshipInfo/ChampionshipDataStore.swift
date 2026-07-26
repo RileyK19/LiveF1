@@ -76,6 +76,12 @@ final class ChampionshipDataStore: ObservableObject {
         }
         return "Soon"
     }
+    
+    func scheduleNotificationsForNextRace() async {
+        guard let race = nextRace else { return }
+        await SessionNotificationManager.shared.requestAuthorizationIfNeeded()
+        await SessionNotificationManager.shared.scheduleNotifications(for: race)
+    }
 
     // MARK: - Fetch Schedule
 
