@@ -69,7 +69,12 @@ private struct DriverStandingsTab: View {
     var body: some View {
         List {
             ForEach(store.driverStandings) { standing in
-                DriverStandingRow(standing: standing, leaderPoints: leaderPoints)
+                NavigationLink {
+                    SeasonStoryView()
+                        .environmentObject(ChampionshipDataStore())
+                } label: {
+                    DriverStandingRow(standing: standing, leaderPoints: leaderPoints)
+                }
             }
         }
         .listStyle(.plain)
@@ -305,7 +310,12 @@ private struct RaceResultsTab: View {
                     } else {
                         List {
                             ForEach(store.raceResults) { result in
-                                RaceResultRow(result: result)
+                                NavigationLink {
+                                    RaceStoryView(selectedRound: selectedRound, selectedDriverId: result.driver.driverId)
+                                        .environmentObject(ChampionshipDataStore())
+                                } label: {
+                                    RaceResultRow(result: result)
+                                }
                             }
                         }
                         .listStyle(.plain)

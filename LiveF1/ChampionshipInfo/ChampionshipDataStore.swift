@@ -21,6 +21,9 @@ final class ChampionshipDataStore: ObservableObject {
     @Published var isLoadingStandings = false
     @Published var error: String?
     @Published var lastUpdated: Date?
+    @Published var lapPositions: [ChampionshipLapPosition] = []
+    @Published var isLoadingLaps = false
+    @Published var standingsHistory: [ChampionshipStandingsHistoryEntry] = []
 
     // MARK: - Private
 
@@ -182,6 +185,88 @@ final class ChampionshipDataStore: ObservableObject {
         } catch {
             self.error = "Race results: \(error.localizedDescription)"
         }
+    }
+    
+    // MARK: Fetch stories
+
+    func fetchLapPositions(round: String, forceRefresh: Bool = false) async {
+        let cacheKey = "f1_cache_laps_\(round)"
+
+        if !forceRefresh, let cached: [ChampionshipLapPosition] = loadCache(key: cacheKey) {
+            self.lapPositions = cached
+            return
+        }
+
+        isLoadingLaps = true
+        defer { isLoadingLaps = false }
+
+        var allTimings: [ChampionshipLapPosition] = []
+        var offset = 0
+        let limit = 100
+
+        do {
+            while true {
+                let url = URL(string: "\(base)/\(season)/\(round)/laps.json?limit=\(limit)&offset=\(offset)")!
+                let (data, _) = try await URLSession.shared.data(from: url)
+                let decoded = try JSONDecoder().decode(ChampionshipLapsResponse.self, from: data)
+
+                let laps = decoded.mrData.raceTable.races.first?.laps ?? []
+                let flattened = laps.flatMap { lap -> [ChampionshipLapPosition] in
+                    let lapNumber = Int(lap.number) ?? 0
+                    return lap.timings.map {
+                        ChampionshipLapPosition(driverId: $0.driverId, lap: lapNumber,
+                                                 position: Int($0.position) ?? 0, time: $0.time)
+                    }
+                }
+                allTimings.append(contentsOf: flattened)
+
+                let total = Int(decoded.mrData.total) ?? 0
+                offset += limit
+                if offset >= total || laps.isEmpty { break }
+            }
+
+            self.lapPositions = allTimings
+            saveCache(allTimings, key: cacheKey)
+            updateLastUpdated()
+        } catch {
+            self.error = "Lap positions: \(error.localizedDescription)"
+        }
+    }
+
+    func fetchStandingsHistory(forceRefresh: Bool = false) async {
+        let cacheKey = "f1_cache_standings_history"
+
+        if !forceRefresh, let cached: [ChampionshipStandingsHistoryEntry] = loadCache(key: cacheKey) {
+            self.standingsHistory = cached
+            return
+        }
+
+        // races must already be loaded so we know how many rounds have happened
+        let completedRounds = races.filter { $0.isPast }.compactMap { Int($0.round) }
+        guard !completedRounds.isEmpty else { return }
+
+        var results: [ChampionshipStandingsHistoryEntry] = []
+
+        await withTaskGroup(of: ChampionshipStandingsHistoryEntry?.self) { group in
+            for round in completedRounds {
+                group.addTask {
+                    let url = URL(string: "\(self.base)/\(self.season)/\(round)/driverStandings.json")!
+                    guard let (data, _) = try? await URLSession.shared.data(from: url),
+                          let decoded = try? JSONDecoder().decode(ChampionshipStandingsResponse.self, from: data),
+                          let standings = decoded.mrData.standingsTable.standingsLists.first?.driverStandings
+                    else { return nil }
+                    return ChampionshipStandingsHistoryEntry(round: round, standings: standings)
+                }
+            }
+            for await entry in group {
+                if let entry { results.append(entry) }
+            }
+        }
+
+        results.sort { $0.round < $1.round }
+        self.standingsHistory = results
+        saveCache(results, key: cacheKey)
+        updateLastUpdated()
     }
 
     // MARK: - Cache Helpers

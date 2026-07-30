@@ -103,6 +103,8 @@
 				ChampionshipInfo/F1DBTrackSVGs/spielberg.svg,
 				ChampionshipInfo/F1DBTrackSVGs/suzuka.svg,
 				ChampionshipInfo/F1DBTrackSVGs/zandvoort.svg,
+				ChampionshipInfo/RaceStoryView.swift,
+				ChampionshipInfo/SeasonStoryView.swift,
 				ChampionshipInfo/SessionNotificationManager.swift,
 				LiveTiming/Models/ColorHelper.swift,
 				Views/SpoilerWarningView.swift,
@@ -518,7 +520,7 @@
 				CODE_SIGN_ENTITLEMENTS = LiveF1/LiveF1.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 5;
+				CURRENT_PROJECT_VERSION = 6;
 				DEVELOPMENT_TEAM = TMN6MFG35F;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -558,7 +560,7 @@
 				CODE_SIGN_ENTITLEMENTS = LiveF1/LiveF1.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 5;
+				CURRENT_PROJECT_VERSION = 6;
 				DEVELOPMENT_TEAM = TMN6MFG35F;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;

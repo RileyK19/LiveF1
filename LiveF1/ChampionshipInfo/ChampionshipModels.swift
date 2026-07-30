@@ -285,3 +285,61 @@ private func constrToColor(_ constructor: String) -> String {
     ]
     return colors[constructor] ?? "#888888"
 }
+
+// MARK: Stories models
+
+struct ChampionshipLapsResponse: Codable {
+    let mrData: ChampionshipMRDataLaps
+    enum CodingKeys: String, CodingKey { case mrData = "MRData" }
+}
+
+struct ChampionshipMRDataLaps: Codable {
+    let total: String
+    let limit: String
+    let offset: String
+    let raceTable: ChampionshipLapsRaceTable
+    enum CodingKeys: String, CodingKey {
+        case total, limit, offset
+        case raceTable = "RaceTable"
+    }
+}
+
+struct ChampionshipLapsRaceTable: Codable {
+    let season: String
+    let round: String
+    let races: [ChampionshipLapsRace]
+    enum CodingKeys: String, CodingKey { case season, round, races = "Races" }
+}
+
+struct ChampionshipLapsRace: Codable {
+    let raceName: String
+    let laps: [ChampionshipLap]
+    enum CodingKeys: String, CodingKey { case raceName, laps = "Laps" }
+}
+
+struct ChampionshipLap: Codable {
+    let number: String
+    let timings: [ChampionshipLapTiming]
+    enum CodingKeys: String, CodingKey { case number, timings = "Timings" }
+}
+
+struct ChampionshipLapTiming: Codable, Identifiable {
+    var id: String { "\(driverId)" }
+    let driverId: String
+    let position: String
+    let time: String?
+}
+
+struct ChampionshipLapPosition: Codable, Identifiable {
+    var id: String { "\(driverId)-\(lap)" }
+    let driverId: String
+    let lap: Int
+    let position: Int
+    let time: String?
+}
+
+
+struct ChampionshipStandingsHistoryEntry: Codable {
+    let round: Int
+    let standings: [ChampionshipDriverStanding]
+}
