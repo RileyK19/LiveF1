@@ -13,7 +13,7 @@ struct TimingTowerView: View {
     @State private var selectedDriver: Driver?
     @AppStorage("isDark") private var isDark = false
     
-    @State private var radioToast: RadioMessage?
+//    @State private var radioToast: RadioMessage?
     @State private var toastTimer: Timer?
 
     var body: some View {
@@ -43,31 +43,31 @@ struct TimingTowerView: View {
 //                DriverDetailView(driver: driver, store: store)
                 DriverDetailView(driverID: driver.id, store: store)
             }
-            .overlay(alignment: .top) {
-                if let msg = radioToast {
-                    RadioToast(store: store, msgId: msg.id)
-                        .transition(.move(edge: .top).combined(with: .opacity))
-                        .padding(.top, 8)
-                }
-            }
-            .animation(.spring(), value: radioToast?.id)
-            .onChange(of: store.radioMessages.count) { old, new in
-                print("📻 onChange: \(old) → \(new)")
-                guard new > old, let msg = store.radioMessages.first else { return }
-                toastTimer?.invalidate()
-                radioToast = msg
-                toastTimer = Timer.scheduledTimer(withTimeInterval: 5, repeats: false) { _ in
-                    DispatchQueue.main.async { radioToast = nil }
-                }
-            }
-            .onAppear {
-                if let msg = store.radioMessages.first {
-                    radioToast = msg
-                    toastTimer = Timer.scheduledTimer(withTimeInterval: 5, repeats: false) { _ in
-                        DispatchQueue.main.async { radioToast = nil }
-                    }
-                }
-            }
+//            .overlay(alignment: .top) {
+//                if let msg = radioToast {
+//                    RadioToast(store: store, msgId: msg.id)
+//                        .transition(.move(edge: .top).combined(with: .opacity))
+//                        .padding(.top, 8)
+//                }
+//            }
+//            .animation(.spring(), value: radioToast?.id)
+//            .onChange(of: store.radioMessages.count) { old, new in
+//                print("📻 onChange: \(old) → \(new)")
+//                guard new > old, let msg = store.radioMessages.first else { return }
+//                toastTimer?.invalidate()
+//                radioToast = msg
+//                toastTimer = Timer.scheduledTimer(withTimeInterval: 5, repeats: false) { _ in
+//                    DispatchQueue.main.async { radioToast = nil }
+//                }
+//            }
+//            .onAppear {
+//                if let msg = store.radioMessages.first {
+//                    radioToast = msg
+//                    toastTimer = Timer.scheduledTimer(withTimeInterval: 5, repeats: false) { _ in
+//                        DispatchQueue.main.async { radioToast = nil }
+//                    }
+//                }
+//            }
         }
         .background(isDark ? Color.black : Color.white)
         .navigationTitle("Timing")

@@ -35,7 +35,10 @@ struct LiveConnectView: View {
 //            VStack(spacing: 16) {
             VStack(spacing: 20) {
                 HStack(spacing: 14) {
-                    NavigationLink { TimingTowerView(store: store) } label: {
+                    NavigationLink {
+                        TimingTowerView(store: store)
+                            .overlay(ToastContainerView(store: store))
+                    } label: {
                         SquircleCard(icon: "stopwatch", title: "Timing Tower", subtitle: "Live driver timing data", color: .red)
                     }
                     .buttonStyle(.plain)
@@ -47,35 +50,111 @@ struct LiveConnectView: View {
                 }
                 .padding(.horizontal, 20)
                 
-                ConnectionRowCard(icon: "key", value: $token, title: "(Opt) F1TV Login", titleKey: token.isEmpty ? "Not logged in" : "Logged in", color: .blue, onPress: {
-                    if token.isEmpty {
-                        showingBrowser = true
-                    } else {
-                        TokenStore.clear()
-                        token = ""
-                        hasSavedToken = false
+                NavigationLink {
+                    EventLogView(store: store)
+                } label: {
+                    RowCard(
+                        icon: "megaphone",
+                        title: "Race Control",
+                        subtitle: "See race control messages",
+                        color: .yellow
+                    )
+                    .padding(.horizontal, 20)
+                }
+                
+//                ConnectionRowCard(icon: "key", value: $token, title: "(Opt) F1TV Login", titleKey: token.isEmpty ? "Not logged in" : "Logged in", color: .blue, onPress: {
+//                    if token.isEmpty {
+//                        showingBrowser = true
+//                    } else {
+//                        TokenStore.clear()
+//                        token = ""
+//                        hasSavedToken = false
+//                    }
+//                }, buttonTitle: token.isEmpty ? "Sign In" : "Log Out", onPressInfo: {
+//                    showingInfo = true
+//                })
+//                .buttonStyle(.plain)
+//                .padding(.horizontal, 20)
+                RowCard(icon: "key", color: .blue) {
+                    HStack(spacing: 12) {
+                        Button {
+                            showingInfo = true
+                        } label: {
+                            Image(systemName: "questionmark.circle")
+                                .foregroundColor(Color.blue.opacity(0.8))
+                        }
+
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("(Opt) F1TV Login")
+                                .font(.system(size: 10))
+                                .foregroundStyle(.primary)
+                            Text(token.isEmpty ? "Not logged in" : "Logged in")
+                                .font(.system(size: 13, weight: .black, design: .rounded))
+                                .foregroundColor(.blue)
+                        }
                     }
-                }, buttonTitle: token.isEmpty ? "Sign In" : "Log Out", onPressInfo: {
-                    showingInfo = true
-                })
-                .buttonStyle(.plain)
+                } trailing: {
+                    PillButton(title: token.isEmpty ? "Sign In" : "Log Out", color: .blue) {
+                        if token.isEmpty {
+                            showingBrowser = true
+                        } else {
+                            TokenStore.clear()
+                            token = ""
+                            hasSavedToken = false
+                        }
+                    }
+                }
                 .padding(.horizontal, 20)
                 
-                DelayRowCard(icon: "clock", value: $delay, titleKey: "Enter delay amount", color: .purple, onPress: {
-                    store.setDelay(TimeInterval(delay))
-                    focus = false
-                }, buttonTitle: "Set delay", focus: $focus)
-                .buttonStyle(.plain)
+//                DelayRowCard(icon: "clock", value: $delay, titleKey: "Enter delay amount", color: .purple, onPress: {
+//                    store.setDelay(TimeInterval(delay))
+//                    focus = false
+//                }, buttonTitle: "Set delay", focus: $focus)
+//                .buttonStyle(.plain)
+//                .padding(.horizontal, 20)
+                RowCard(icon: "clock", color: .purple) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Enter delay amount")
+                            .font(.system(size: 10))
+                            .foregroundStyle(.primary)
+                        TextField("Enter delay amount", value: $delay, format: .number)
+                            .keyboardType(.numberPad)
+                            .font(.system(size: 13, weight: .black, design: .rounded))
+                            .foregroundColor(.purple)
+                            .focused($focus)
+                    }
+                } trailing: {
+                    PillButton(title: "Set delay", color: .purple) {
+                        store.setDelay(TimeInterval(delay))
+                        focus = false
+                    }
+                }
                 .padding(.horizontal, 20)
                 
-                ReconnectRowCard(icon: "arrow.counterclockwise.circle", value: statusText,
-                                 titleKey: "Connection Status",
-                                 color: statusText == "Connected" ? .green : statusText == "Disconnected" ? .red : .orange,
-                                 onPress: {
-                    connect()
-                    trackerVM.reset()
-                }, buttonTitle: "Reconnect")
-                .buttonStyle(.plain)
+//                ReconnectRowCard(icon: "arrow.counterclockwise.circle", value: statusText,
+//                                 titleKey: "Connection Status",
+//                                 color: statusText == "Connected" ? .green : statusText == "Disconnected" ? .red : .orange,
+//                                 onPress: {
+//                    connect()
+//                    trackerVM.reset()
+//                }, buttonTitle: "Reconnect")
+//                .buttonStyle(.plain)
+//                .padding(.horizontal, 20)
+                RowCard(icon: "arrow.counterclockwise.circle", color: statusText == "Connected" ? .green : statusText == "Disconnected" ? .red : .orange) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Connection Status")
+                            .font(.system(size: 13, weight: .black, design: .rounded))
+                            .foregroundStyle(.primary)
+                        Text(statusText)
+                            .font(.system(size: 13))
+                            .foregroundStyle(.secondary)
+                    }
+                } trailing: {
+                    PillButton(title: "Reconnect", color: statusText == "Connected" ? .green : statusText == "Disconnected" ? .red : .orange) {
+                        connect()
+                        trackerVM.reset()
+                    }
+                }
                 .padding(.horizontal, 20)
 
             }
@@ -190,155 +269,155 @@ struct LiveConnectView: View {
     }
 }
 
-private struct ConnectionRowCard: View {
-    let icon: String
-    @State var value: Binding<String>
-    let title: String
-    let titleKey: String
-    let color: Color
-    var onPress: ()->Void
-    let buttonTitle: String
-    var onPressInfo: ()->Void
-
-    var body: some View {
-        HStack(spacing: 16) {
-            IconBadge(icon: icon, color: color, size: 48, iconSize: 20, cornerRadius: 14)
-            
-            Button {
-                onPressInfo()
-            } label: {
-                Image(systemName: "questionmark.circle")
-                    .foregroundColor(color.opacity(0.8))
-            }
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(.system(size: 10))
-                    .foregroundStyle(.primary)
-//                SecureField(titleKey, text: value)
-                Text(titleKey)
-                    .font(.system(size: 13, weight: .black, design: .rounded))
-                    .foregroundStyle(.secondary)
-                    .foregroundColor(color)
-            }
-
-            Spacer()
-            
-            Button {
-                onPress()
-            } label: {
-                Text(buttonTitle)
-                    .font(.system(size: 13, weight: .black, design: .rounded))
-                    .foregroundStyle(.secondary)
-                    .padding()
-            }
-            .overlay(
-                RoundedRectangle(cornerRadius: 24, style: .continuous)
-                    .strokeBorder(color.opacity(0.5), lineWidth: 2.5)
-            )
-        }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 16)
-        .background(color.opacity(0.08), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .strokeBorder(color.opacity(0.12), lineWidth: 1)
-        )
-    }
-}
-
-private struct DelayRowCard: View {
-    let icon: String
-    @State var value: Binding<Int>
-    let titleKey: String
-    let color: Color
-    var onPress: ()->Void
-    let buttonTitle: String
-    var focus: FocusState<Bool>.Binding
-
-    var body: some View {
-        HStack(spacing: 16) {
-            IconBadge(icon: icon, color: color, size: 48, iconSize: 20, cornerRadius: 14)
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(titleKey)
-                    .font(.system(size: 10))
-                    .foregroundStyle(.primary)
-                
-                TextField(titleKey, value: value, format: .number)
-                    .keyboardType(.numberPad)
-                    .font(.system(size: 13, weight: .black, design: .rounded))
-                    .foregroundStyle(.secondary)
-                    .foregroundColor(color)
-                    .focused(focus)
-            }
-            Spacer()
-            
-            Button {
-                onPress()
-            } label: {
-                Text(buttonTitle)
-                    .font(.system(size: 13, weight: .black, design: .rounded))
-                    .foregroundStyle(.secondary)
-                    .padding()
-            }
-            .overlay(
-                RoundedRectangle(cornerRadius: 24, style: .continuous)
-                    .strokeBorder(color.opacity(0.5), lineWidth: 2.5)
-            )
-        }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 16)
-        .background(color.opacity(0.08), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .strokeBorder(color.opacity(0.12), lineWidth: 1)
-        )
-    }
-}
-
-private struct ReconnectRowCard: View {
-    let icon: String
-    var value: String
-    let titleKey: String
-    let color: Color
-    var onPress: ()->Void
-    let buttonTitle: String
-
-    var body: some View {
-        HStack(spacing: 16) {
-            IconBadge(icon: icon, color: color, size: 48, iconSize: 20, cornerRadius: 14)
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(titleKey)
-                    .font(.system(size: 13, weight: .black, design: .rounded))
-                    .foregroundStyle(.primary)
-                
-                Text(value)
-                    .font(.system(size: 13))
-                    .foregroundStyle(.secondary)
-            }
-            Spacer()
-            
-            Button {
-                onPress()
-            } label: {
-                Text(buttonTitle)
-                    .font(.system(size: 13, weight: .black, design: .rounded))
-                    .foregroundStyle(.secondary)
-                    .padding()
-            }
-            .overlay(
-                RoundedRectangle(cornerRadius: 24, style: .continuous)
-                    .strokeBorder(color.opacity(0.5), lineWidth: 2.5)
-            )
-        }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 16)
-        .background(color.opacity(0.08), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .strokeBorder(color.opacity(0.12), lineWidth: 1)
-        )
-    }
-}
+//private struct ConnectionRowCard: View {
+//    let icon: String
+//    @State var value: Binding<String>
+//    let title: String
+//    let titleKey: String
+//    let color: Color
+//    var onPress: ()->Void
+//    let buttonTitle: String
+//    var onPressInfo: ()->Void
+//
+//    var body: some View {
+//        HStack(spacing: 16) {
+//            IconBadge(icon: icon, color: color, size: 48, iconSize: 20, cornerRadius: 14)
+//            
+//            Button {
+//                onPressInfo()
+//            } label: {
+//                Image(systemName: "questionmark.circle")
+//                    .foregroundColor(color.opacity(0.8))
+//            }
+//
+//            VStack(alignment: .leading, spacing: 2) {
+//                Text(title)
+//                    .font(.system(size: 10))
+//                    .foregroundStyle(.primary)
+////                SecureField(titleKey, text: value)
+//                Text(titleKey)
+//                    .font(.system(size: 13, weight: .black, design: .rounded))
+//                    .foregroundStyle(.secondary)
+//                    .foregroundColor(color)
+//            }
+//
+//            Spacer()
+//            
+//            Button {
+//                onPress()
+//            } label: {
+//                Text(buttonTitle)
+//                    .font(.system(size: 13, weight: .black, design: .rounded))
+//                    .foregroundStyle(.secondary)
+//                    .padding()
+//            }
+//            .overlay(
+//                RoundedRectangle(cornerRadius: 24, style: .continuous)
+//                    .strokeBorder(color.opacity(0.5), lineWidth: 2.5)
+//            )
+//        }
+//        .padding(.horizontal, 20)
+//        .padding(.vertical, 16)
+//        .background(color.opacity(0.08), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+//        .overlay(
+//            RoundedRectangle(cornerRadius: 24, style: .continuous)
+//                .strokeBorder(color.opacity(0.12), lineWidth: 1)
+//        )
+//    }
+//}
+//
+//private struct DelayRowCard: View {
+//    let icon: String
+//    @State var value: Binding<Int>
+//    let titleKey: String
+//    let color: Color
+//    var onPress: ()->Void
+//    let buttonTitle: String
+//    var focus: FocusState<Bool>.Binding
+//
+//    var body: some View {
+//        HStack(spacing: 16) {
+//            IconBadge(icon: icon, color: color, size: 48, iconSize: 20, cornerRadius: 14)
+//
+//            VStack(alignment: .leading, spacing: 2) {
+//                Text(titleKey)
+//                    .font(.system(size: 10))
+//                    .foregroundStyle(.primary)
+//                
+//                TextField(titleKey, value: value, format: .number)
+//                    .keyboardType(.numberPad)
+//                    .font(.system(size: 13, weight: .black, design: .rounded))
+//                    .foregroundStyle(.secondary)
+//                    .foregroundColor(color)
+//                    .focused(focus)
+//            }
+//            Spacer()
+//            
+//            Button {
+//                onPress()
+//            } label: {
+//                Text(buttonTitle)
+//                    .font(.system(size: 13, weight: .black, design: .rounded))
+//                    .foregroundStyle(.secondary)
+//                    .padding()
+//            }
+//            .overlay(
+//                RoundedRectangle(cornerRadius: 24, style: .continuous)
+//                    .strokeBorder(color.opacity(0.5), lineWidth: 2.5)
+//            )
+//        }
+//        .padding(.horizontal, 20)
+//        .padding(.vertical, 16)
+//        .background(color.opacity(0.08), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+//        .overlay(
+//            RoundedRectangle(cornerRadius: 24, style: .continuous)
+//                .strokeBorder(color.opacity(0.12), lineWidth: 1)
+//        )
+//    }
+//}
+//
+//private struct ReconnectRowCard: View {
+//    let icon: String
+//    var value: String
+//    let titleKey: String
+//    let color: Color
+//    var onPress: ()->Void
+//    let buttonTitle: String
+//
+//    var body: some View {
+//        HStack(spacing: 16) {
+//            IconBadge(icon: icon, color: color, size: 48, iconSize: 20, cornerRadius: 14)
+//
+//            VStack(alignment: .leading, spacing: 2) {
+//                Text(titleKey)
+//                    .font(.system(size: 13, weight: .black, design: .rounded))
+//                    .foregroundStyle(.primary)
+//                
+//                Text(value)
+//                    .font(.system(size: 13))
+//                    .foregroundStyle(.secondary)
+//            }
+//            Spacer()
+//            
+//            Button {
+//                onPress()
+//            } label: {
+//                Text(buttonTitle)
+//                    .font(.system(size: 13, weight: .black, design: .rounded))
+//                    .foregroundStyle(.secondary)
+//                    .padding()
+//            }
+//            .overlay(
+//                RoundedRectangle(cornerRadius: 24, style: .continuous)
+//                    .strokeBorder(color.opacity(0.5), lineWidth: 2.5)
+//            )
+//        }
+//        .padding(.horizontal, 20)
+//        .padding(.vertical, 16)
+//        .background(color.opacity(0.08), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+//        .overlay(
+//            RoundedRectangle(cornerRadius: 24, style: .continuous)
+//                .strokeBorder(color.opacity(0.12), lineWidth: 1)
+//        )
+//    }
+//}

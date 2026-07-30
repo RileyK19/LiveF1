@@ -19,7 +19,12 @@ class F1SessionStore: ObservableObject {
     @Published var carTelemetry: [String: CarTelemetry] = [:]
     @Published var updateCount: Int = 0
     @Published var radioMessages: [RadioMessage] = []
+    @Published var raceControlMessages: [RaceControlMessage] = []
     @Published var carPositions: [String: CarPosition] = [:]
+    @Published var toastQueue: [ToastKind] = []
+    @Published var currentToast: ToastKind?
+
+    private var toastTimer: Task<Void, Never>?
     
     private var pendingRadio: [String: Any]?
     
@@ -48,6 +53,42 @@ class F1SessionStore: ObservableObject {
     }
     
     @Published var drivers: [Driver] = []
+    
+    enum LogEntry: Identifiable {
+        case radio(RadioMessage)
+        case raceControl(RaceControlMessage)
+
+        var id: String {
+            switch self {
+            case .radio(let r): return "radio-\(r.id)"
+            case .raceControl(let rc): return "rc-\(rc.id)"
+            }
+        }
+        var utc: String {
+            switch self {
+            case .radio(let r): return r.utc
+            case .raceControl(let rc): return rc.utc
+            }
+        }
+    }
+
+    var combinedLog: [LogEntry] {
+        (radioMessages.map(LogEntry.radio) + raceControlMessages.map(LogEntry.raceControl))
+            .sorted { $0.utc > $1.utc }
+    }
+    
+    enum ToastKind: Identifiable {
+        case radio(String)         // RadioMessage.id
+        case raceControl(String)   // RaceControlMessage.id
+
+        var id: String {
+            switch self {
+            case .radio(let id): return "radio-\(id)"
+            case .raceControl(let id): return "rc-\(id)"
+            }
+        }
+    }
+
     
     init() {
         flushTask = Task { [weak self] in
@@ -129,6 +170,9 @@ class F1SessionStore: ObservableObject {
                 pendingRadio = payload
             }
         }
+        if topic == "RaceControlMessages" {
+            processRaceControl(payload)
+        }
         
         if topic == "SessionInfo", let pending = pendingRadio {
             pendingRadio = nil
@@ -161,6 +205,8 @@ class F1SessionStore: ObservableObject {
             print("📻 inserting radio msg: \(tla) \(utc)")
             if !radioMessages.contains(where: { $0.id == utc }) {
                 radioMessages.insert(msg, at: 0)
+                enqueueToast(.radio(msg.id))
+                transcribe(msg)
                 print("📻 radioMessages count now: \(radioMessages.count)")
                 transcribe(msg)
             }
@@ -325,6 +371,56 @@ class F1SessionStore: ObservableObject {
         delaySeconds = seconds
         if seconds == 0 {
             goLive()
+        }
+    }
+    
+    private func processRaceControl(_ payload: [String: Any]) {
+        var msgs: [[String: Any]] = []
+        if let arr = payload["Messages"] as? [[String: Any]] {
+            msgs = arr
+        } else if let dict = payload["Messages"] as? [String: Any] {
+            msgs = dict.values.compactMap { $0 as? [String: Any] }
+        }
+        guard !msgs.isEmpty else { return }
+
+        for m in msgs {
+            guard let utc = m["Utc"] as? String,
+                  let message = m["Message"] as? String else { continue }
+
+            let id = utc + message // Utc alone can repeat within the same second
+            guard !raceControlMessages.contains(where: { $0.id == id }) else { continue }
+
+            let rc = RaceControlMessage(
+                id: id,
+                utc: utc,
+                lap: m["Lap"] as? Int,
+                category: m["Category"] as? String ?? "Other",
+                message: message,
+                flag: m["Flag"] as? String,
+                scope: m["Scope"] as? String,
+                sector: m["Sector"] as? Int,
+                driverNumber: m["RacingNumber"] as? String
+            )
+            raceControlMessages.insert(rc, at: 0)
+            enqueueToast(.raceControl(rc.id))
+        }
+    }
+    
+    func enqueueToast(_ toast: ToastKind) {
+        toastQueue.append(toast)
+        advanceToastIfNeeded()
+    }
+
+    func advanceToastIfNeeded() {
+        guard currentToast == nil, !toastQueue.isEmpty else { return }
+        currentToast = toastQueue.removeFirst()
+        toastTimer?.cancel()
+        toastTimer = Task { [weak self] in
+            try? await Task.sleep(nanoseconds: 5_000_000_000) // 5s per toast
+            await MainActor.run {
+                self?.currentToast = nil
+                self?.advanceToastIfNeeded()
+            }
         }
     }
 }

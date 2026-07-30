@@ -87,30 +87,18 @@ struct SquircleCard: View {
     }
 }
 
-struct RowCard: View {
+struct RowCard<Content: View, Trailing: View>: View {
     let icon: String
-    let title: String
-    let subtitle: String
     let color: Color
+    @ViewBuilder let content: () -> Content
+    @ViewBuilder let trailing: () -> Trailing
 
     var body: some View {
         HStack(spacing: 16) {
             IconBadge(icon: icon, color: color, size: 52, iconSize: 20, cornerRadius: 14)
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(.system(size: 17, weight: .black, design: .rounded))
-                    .foregroundStyle(.primary)
-                Text(subtitle)
-                    .font(.system(size: 13))
-                    .foregroundStyle(.secondary)
-            }
-
+            content()
             Spacer()
-
-            Image(systemName: "chevron.right")
-                .font(.system(size: 13, weight: .bold))
-                .foregroundStyle(.tertiary)
+            trailing()
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 16)
@@ -118,6 +106,63 @@ struct RowCard: View {
         .overlay(
             RoundedRectangle(cornerRadius: 24, style: .continuous)
                 .strokeBorder(color.opacity(0.12), lineWidth: 1)
+        )
+    }
+}
+
+// MARK: - Default title/subtitle + chevron, so existing plain calls keep compiling unchanged
+
+struct TitleSubtitleContent: View {
+    let title: String
+    let subtitle: String
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(title)
+                .font(.system(size: 17, weight: .black, design: .rounded))
+                .foregroundStyle(.primary)
+            Text(subtitle)
+                .font(.system(size: 13))
+                .foregroundStyle(.secondary)
+        }
+    }
+}
+
+struct ChevronTrailing: View {
+    var body: some View {
+        Image(systemName: "chevron.right")
+            .font(.system(size: 13, weight: .bold))
+            .foregroundStyle(.tertiary)
+    }
+}
+
+extension RowCard where Content == TitleSubtitleContent, Trailing == ChevronTrailing {
+    init(icon: String, title: String, subtitle: String, color: Color) {
+        self.init(icon: icon, color: color) {
+            TitleSubtitleContent(title: title, subtitle: subtitle)
+        } trailing: {
+            ChevronTrailing()
+        }
+    }
+}
+
+// MARK: - Shared pill button, since all three special cards in LiveConnectView use one
+
+struct PillButton: View {
+    let title: String
+    let color: Color
+    var action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Text(title)
+                .font(.system(size: 13, weight: .black, design: .rounded))
+                .foregroundStyle(color)
+                .opacity(0.85)
+                .padding()
+        }
+        .overlay(
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .strokeBorder(color.opacity(0.5), lineWidth: 2.5)
         )
     }
 }
