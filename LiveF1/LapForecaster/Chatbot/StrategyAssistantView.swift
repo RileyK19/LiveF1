@@ -277,8 +277,8 @@ struct StrategyResultCard: View {
                     Image(systemName: delta < 0 ? "checkmark.circle.fill" : "xmark.circle.fill")
                         .foregroundStyle(delta < 0 ? .green : .red)
                     Text(delta < 0
-                         ? "Hypothetical is \(formatDelta(abs(delta))) faster"
-                         : "Hypothetical is \(formatDelta(abs(delta))) slower")
+                         ? "Hypothetical is \(formatDelta(delta)) faster"
+                         : "Hypothetical is \(formatDelta(delta)) slower")
                         .font(.subheadline.bold())
                 }
             }
@@ -343,14 +343,14 @@ struct StrategyResultCard: View {
                     x: .value("Lap", point.lap),
                     y: .value("Delta", point.delta)
                 )
-                .foregroundStyle(point.delta < 0 ? Color.green : Color.red)
+                .foregroundStyle(timeDelta ?? 0 < 0 ? Color.green : Color.red)
 
                 AreaMark(
                     x: .value("Lap", point.lap),
                     y: .value("Delta", point.delta)
                 )
                 .foregroundStyle(
-                    (point.delta < 0 ? Color.green : Color.red).opacity(0.1)
+                    (timeDelta ?? 0 < 0 ? Color.green : Color.red).opacity(0.1)
                 )
             }
         }
@@ -378,19 +378,34 @@ struct StrategyResultCard: View {
 
     // MARK: - Cumulative delta calculation
 
-    // In your View / ChartView
-
+//    private var cumulativeDeltaPoints: [DeltaPoint] {
+//        guard let median = viewModel.driverMedianLapTime,
+//              let trackModel = viewModel.trackEvolutionModel
+//        else { return [] }
+//
+//        return StrategyCalculator.shared.cumulativeDeltaPoints(
+//            actual: actual,
+//            hypothetical: hypothetical,
+//            median: median,
+//            trackModel: trackModel,
+//            annotatedLaps: viewModel.annotatedLaps
+//        )
+//    }
     private var cumulativeDeltaPoints: [DeltaPoint] {
-        guard let median = viewModel.driverMedianLapTime,
+        guard let median = viewModel.comparisonDriverMedianLapTime,
               let trackModel = viewModel.trackEvolutionModel
         else { return [] }
+
+        let baseLaps = viewModel.comparisonDriverNumber != nil
+            ? viewModel.comparisonAnnotatedLaps
+            : viewModel.annotatedLaps
 
         return StrategyCalculator.shared.cumulativeDeltaPoints(
             actual: actual,
             hypothetical: hypothetical,
             median: median,
             trackModel: trackModel,
-            annotatedLaps: viewModel.annotatedLaps
+            annotatedLaps: baseLaps
         )
     }
 

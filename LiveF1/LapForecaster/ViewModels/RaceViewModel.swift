@@ -69,6 +69,16 @@ class RaceViewModel: ObservableObject {
         guard !durations.isEmpty else { return nil }
         return durations[durations.count / 2]
     }
+    
+    var comparisonDriverMedianLapTime: Double? {
+        guard let driver = comparisonDriverNumber else { return driverMedianLapTime }
+        let durations = laps
+            .filter { $0.driverNumber == driver && !$0.isPitOutLap && $0.lapDuration != nil }
+            .compactMap { $0.lapDuration }
+            .sorted()
+        guard !durations.isEmpty else { return nil }
+        return durations[durations.count / 2]
+    }
 
     var adjustedAnnotatedLaps: [AnnotatedLap] {
         guard let driver = selectedDriverNumber,
@@ -166,7 +176,7 @@ class RaceViewModel: ObservableObject {
     // In your ViewModel
 
     func calculateTimeDeltaVsDriver(hypothetical: [F1PredictorStint]) -> Double? {
-        guard let median = driverMedianLapTime,
+        guard let median = comparisonDriverMedianLapTime,
               let trackModel = trackEvolutionModel
         else { return nil }
 

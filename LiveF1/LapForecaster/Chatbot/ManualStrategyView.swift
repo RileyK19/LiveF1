@@ -139,7 +139,7 @@ struct ManualStrategyView: View {
                             Text("Result")
                                 .font(.headline)
                             StrategyResultCard(
-                                actual: viewModel.stintsForSelectedDriver,
+                                actual: viewModel.stintsForComparisonDriver,
                                 hypothetical: hypothetical,
                                 timeDelta: viewModel.calculateTimeDeltaVsDriver(hypothetical: hypothetical),
                                 viewModel: viewModel

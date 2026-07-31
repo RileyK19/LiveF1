@@ -35,9 +35,15 @@ final class StrategyCalculator {
         return median + (model.degradationRate * Double(tyreAge)) + trackDelta
     }
 
-    func activeStint(for lap: Int, in stints: [F1PredictorStint]) -> F1PredictorStint? {
+//    func activeStint(for lap: Int, in stints: [F1PredictorStint]) -> F1PredictorStint? {
+//        stints.first { s in
+//            guard let end = s.lapEnd else { return false }
+//            return (s.lapStart...end).contains(lap)
+//        }
+//    }
+    func activeStint(for lap: Int, in stints: [F1PredictorStint], totalLaps: Int) -> F1PredictorStint? {
         stints.first { s in
-            guard let end = s.lapEnd else { return false }
+            let end = s.lapEnd ?? totalLaps
             return (s.lapStart...end).contains(lap)
         }
     }
@@ -77,10 +83,10 @@ final class StrategyCalculator {
 
         var cumulative = 0.0
         return (1...totalLaps).map { lap in
-            let actualTime = activeStint(for: lap, in: actual)
+            let actualTime = activeStint(for: lap, in: actual, totalLaps: totalLaps)
                 .map { predictedTime(lap: lap, stint: $0, median: median, trackModel: trackModel, models: models) }
                 ?? median
-            let hypoTime = activeStint(for: lap, in: hypothetical)
+            let hypoTime = activeStint(for: lap, in: hypothetical, totalLaps: totalLaps)
                 .map { predictedTime(lap: lap, stint: $0, median: median, trackModel: trackModel, models: models) }
                 ?? median
 
