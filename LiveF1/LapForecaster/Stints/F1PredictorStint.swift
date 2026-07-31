@@ -16,7 +16,7 @@ struct F1PredictorStint: Codable, Identifiable {
     let driverNumber: Int
     let lapStart: Int
     let lapEnd: Int?
-    let compound: String
+    let compound: String?
     let tyreAgeAtStart: Int
 
     var lapRange: ClosedRange<Int>? {
@@ -25,7 +25,7 @@ struct F1PredictorStint: Codable, Identifiable {
     }
 
     var compoundEnum: TyreCompound {
-        TyreCompound(rawValue: compound) ?? .unknown
+        TyreCompound(rawValue: compound ?? "UNKNOWN") ?? .unknown
     }
 
     enum CodingKeys: String, CodingKey {

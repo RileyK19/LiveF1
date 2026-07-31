@@ -16,6 +16,7 @@
 		58D674D82FD56F1500E13D17 /* NotificationLog in Frameworks */ = {isa = PBXBuildFile; productRef = 58D674D72FD56F1500E13D17 /* NotificationLog */; };
 		58D674EA2FD56F7A00E13D17 /* .gitignore in Resources */ = {isa = PBXBuildFile; fileRef = 58D674E92FD56F7A00E13D17 /* .gitignore */; };
 		58F8119D300BDB6200B252C2 /* TODO.md in Resources */ = {isa = PBXBuildFile; fileRef = 58F8119C300BDB5E00B252C2 /* TODO.md */; };
+		58F811C2301D4E1900B252C2 /* WhisperKit in Frameworks */ = {isa = PBXBuildFile; productRef = 58F811C1301D4E1900B252C2 /* WhisperKit */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -148,6 +149,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				58F811C2301D4E1900B252C2 /* WhisperKit in Frameworks */,
 				58D674D82FD56F1500E13D17 /* NotificationLog in Frameworks */,
 				58CA57312FF17B7A00772EAB /* PocketSVG in Frameworks */,
 			);
@@ -235,6 +237,7 @@
 			packageProductDependencies = (
 				58D674D72FD56F1500E13D17 /* NotificationLog */,
 				58CA57302FF17B7A00772EAB /* PocketSVG */,
+				58F811C1301D4E1900B252C2 /* WhisperKit */,
 			);
 			productName = LiveF1;
 			productReference = 58D674AF2FD1879100E13D17 /* LiveF1.app */;
@@ -270,6 +273,7 @@
 			packageReferences = (
 				58D674D62FD56F1500E13D17 /* XCRemoteSwiftPackageReference "NotificationLog" */,
 				58CA572F2FF17B7A00772EAB /* XCRemoteSwiftPackageReference "pocketsvg" */,
+				58F811C0301D4E1900B252C2 /* XCRemoteSwiftPackageReference "WhisperKit" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 58D674B02FD1879100E13D17 /* Products */;
@@ -640,6 +644,14 @@
 				kind = branch;
 			};
 		};
+		58F811C0301D4E1900B252C2 /* XCRemoteSwiftPackageReference "WhisperKit" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/argmaxinc/WhisperKit.git";
+			requirement = {
+				branch = main;
+				kind = branch;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -657,6 +669,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 58D674D62FD56F1500E13D17 /* XCRemoteSwiftPackageReference "NotificationLog" */;
 			productName = NotificationLog;
+		};
+		58F811C1301D4E1900B252C2 /* WhisperKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 58F811C0301D4E1900B252C2 /* XCRemoteSwiftPackageReference "WhisperKit" */;
+			productName = WhisperKit;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

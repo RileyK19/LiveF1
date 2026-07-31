@@ -216,7 +216,14 @@ struct HomeView: View {
     @State private var hasLiveSession = false
     
     enum AppMode { case live, replay, documents, predictor }
-
+    
+    private var next: ChampionshipRace? {
+        championshipStore.races
+            .filter { $0.isNext && $0.raceDate != nil }
+            .sorted { $0.raceDate! < $1.raceDate! }
+            .first
+    }
+    
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -224,12 +231,21 @@ struct HomeView: View {
 
                     // Header
                     VStack(spacing: 4) {
-                        Text("LiveF1")
-                            .font(.system(size: 32, weight: .black, design: .serif))
-                        Text(Date().formatted(.dateTime.weekday(.wide).month(.wide).day()).uppercased())
-                            .font(.system(size: 11, weight: .semibold))
-                            .foregroundStyle(.secondary)
-                            .tracking(1.5)
+                        if (next == nil) {
+                            Text("LiveF1")
+                                .font(.system(size: 32, weight: .black, design: .serif))
+                            Text(Date().formatted(.dateTime.weekday(.wide).month(.wide).day()).uppercased())
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundStyle(.secondary)
+                                .tracking(1.5)
+                        } else {
+                            Text("Next: \(next!.circuit.location.locality)")
+                                .font(.system(size: 32, weight: .black, design: .serif))
+                            Text(next!.raceDate!.formatted(.dateTime.weekday(.wide).month(.wide).day()).uppercased())
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundStyle(.secondary)
+                                .tracking(1.5)
+                        }
                     }
                     .padding(.top, 20)
 

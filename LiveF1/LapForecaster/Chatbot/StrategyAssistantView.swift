@@ -319,9 +319,9 @@ struct StrategyResultCard: View {
             ForEach(stints) { stint in
                 HStack(spacing: 6) {
                     Circle()
-                        .fill(Color(hex: TyreCompound(rawValue: stint.compound)?.color ?? "#888888"))
+                        .fill(Color(hex: TyreCompound(rawValue: stint.compound ?? "UNKNOWN" )?.color ?? "#888888"))
                         .frame(width: 8, height: 8)
-                    Text("\(stint.compound.prefix(3)) \(stint.lapStart)–\(stint.lapEnd ?? 0)")
+                    Text("\(stint.compound?.prefix(3) ?? "???") \(stint.lapStart)–\(stint.lapEnd ?? 0)")
                         .font(.caption)
                 }
             }

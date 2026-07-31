@@ -47,7 +47,7 @@ struct StrategyContext {
 
         All driver strategies this race:
         \(allDriverStrategies.map { d in
-            "  #\(d.driverNumber): \(d.stints.map { $0.compound }.joined(separator: " -> ")) | pit laps: \(d.pitLaps.map(String.init).joined(separator: ", "))"
+            "  #\(d.driverNumber): \(d.stints.map { $0.compound ?? "UNKNOWN" }.filter { $0 != "UNKNOWN" }.joined(separator: " -> ")) | pit laps: \(d.pitLaps.map(String.init).joined(separator: ", "))"
         }.joined(separator: "\n"))
 
         Strategy templates observed this race:
@@ -89,7 +89,7 @@ struct StrategyContextBuilder {
         let templates = buildTemplates(from: allDriverStrategies)
 
         // Available compounds this race
-        let availableCompounds = Array(Set(stints.map { $0.compound })).sorted()
+        let availableCompounds = Array(Set(stints.map { $0.compound ?? "UNKNOWN" }.filter { $0 != "UNKNOWN" })).sorted()
 
         let selectedDriverStints = stints.stints(for: selectedDriver)
 
@@ -114,7 +114,7 @@ struct StrategyContextBuilder {
             guard !drivers.isEmpty else { return nil }
 
             // Most common compound sequence for this stop count
-            let sequences = drivers.map { $0.stints.map { $0.compound }.joined(separator: ",") }
+            let sequences = drivers.map { $0.stints.map { $0.compound ?? "UNKNOWN" }.filter { $0 != "UNKNOWN" }.joined(separator: ",") }
             let mostCommon = sequences.reduce(into: [:]) { $0[$1, default: 0] += 1 }
                 .max(by: { $0.value < $1.value })?.key ?? ""
             let compounds = mostCommon.split(separator: ",").map(String.init)

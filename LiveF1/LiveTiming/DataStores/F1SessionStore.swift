@@ -10,6 +10,7 @@ import Foundation
 import SwiftUI
 import Combine
 import Speech
+import WhisperKit
 
 @MainActor
 class F1SessionStore: ObservableObject {
@@ -36,6 +37,8 @@ class F1SessionStore: ObservableObject {
     var delaySeconds: TimeInterval = 0
     private var buffer: [(releaseAt: Date, topic: String, payload: [String: Any])] = []
     private var flushTask: Task<Void, Never>?
+    
+    private var whisperPipe: WhisperKit?
     
     var dataSource: (any F1DataSource)? {
         didSet {
@@ -265,76 +268,112 @@ class F1SessionStore: ObservableObject {
         transcribeWithRetry(msg, retries: 3)
     }
 
+    private func loadWhisperIfNeeded() async {
+        guard whisperPipe == nil else { return }
+        whisperPipe = try? await WhisperKit(model: "small.en") 
+    }
+
     private func transcribeWithRetry(_ msg: RadioMessage, retries: Int) {
         guard let url = msg.audioURL else {
             processTranscriptionQueue()
             return
         }
-        
         Task {
+            await loadWhisperIfNeeded()
             guard let (localURL, _) = try? await URLSession.shared.download(from: url) else {
                 await MainActor.run { processTranscriptionQueue() }
                 return
             }
-            let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".mp3")
+            let tempURL = FileManager.default.temporaryDirectory
+                .appendingPathComponent(UUID().uuidString + ".mp3")
             try? FileManager.default.moveItem(at: localURL, to: tempURL)
-            
-            guard let recognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-GB")),
-                  recognizer.isAvailable else {
-                await MainActor.run { processTranscriptionQueue() }
-                return
-            }
-            
-//            let request = SFSpeechURLRecognitionRequest(url: tempURL)
-//            request.shouldReportPartialResults = false
-            
-            let request = SFSpeechURLRecognitionRequest(url: tempURL)
-            request.shouldReportPartialResults = false
 
-            if #available(iOS 16, *) {
-                request.addsPunctuation = true
-            }
+            let result = try? await whisperPipe?.transcribe(audioPath: tempURL.path)
+            try? FileManager.default.removeItem(at: tempURL)
 
-            if #available(iOS 13, *) {
-                request.requiresOnDeviceRecognition = false
-            }
-            
-            let result: String? = await withCheckedContinuation { continuation in
-                var resumed = false
-                recognizer.recognitionTask(with: request) { result, error in
-                    guard !resumed else { return }
-                    if let result, result.isFinal {
-                        resumed = true
-                        continuation.resume(returning: result.bestTranscription.formattedString)
-                    } else if let error {
-                        resumed = true
-                        continuation.resume(returning: nil)
-                        if retries > 0 {
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                                self.transcribeWithRetry(msg, retries: retries - 1)
-                            }
-                        }
+            await MainActor.run {
+                if let segments = result,
+                   let i = self.radioMessages.firstIndex(where: { $0.id == msg.id }) {
+                    let fullText = segments.map(\.text).joined()
+                    if !fullText.isEmpty {
+                        self.radioMessages[i].transcription = fullText
                     }
                 }
-            }
-            if let text = result {
-                print("✅ transcription: \(text)")
-            } else {
-                print("❌ transcription returned nil")
-            }
-            
-            try? FileManager.default.removeItem(at: tempURL)
-            
-            await MainActor.run {
-                if let text = result, let i = self.radioMessages.firstIndex(where: { $0.id == msg.id }) {
-                    self.radioMessages[i].transcription = text
-                }
-                if result != nil || retries == 0 {
-                    self.processTranscriptionQueue()
-                }
+                self.processTranscriptionQueue()
             }
         }
     }
+    
+//    private func transcribeWithRetry(_ msg: RadioMessage, retries: Int) {
+//        guard let url = msg.audioURL else {
+//            processTranscriptionQueue()
+//            return
+//        }
+//        
+//        Task {
+//            guard let (localURL, _) = try? await URLSession.shared.download(from: url) else {
+//                await MainActor.run { processTranscriptionQueue() }
+//                return
+//            }
+//            let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".mp3")
+//            try? FileManager.default.moveItem(at: localURL, to: tempURL)
+//            
+//            guard let recognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-GB")),
+//                  recognizer.isAvailable else {
+//                await MainActor.run { processTranscriptionQueue() }
+//                return
+//            }
+//            
+////            let request = SFSpeechURLRecognitionRequest(url: tempURL)
+////            request.shouldReportPartialResults = false
+//            
+//            let request = SFSpeechURLRecognitionRequest(url: tempURL)
+//            request.shouldReportPartialResults = false
+//
+//            if #available(iOS 16, *) {
+//                request.addsPunctuation = true
+//            }
+//
+//            if #available(iOS 13, *) {
+//                request.requiresOnDeviceRecognition = false
+//            }
+//            
+//            let result: String? = await withCheckedContinuation { continuation in
+//                var resumed = false
+//                recognizer.recognitionTask(with: request) { result, error in
+//                    guard !resumed else { return }
+//                    if let result, result.isFinal {
+//                        resumed = true
+//                        continuation.resume(returning: result.bestTranscription.formattedString)
+//                    } else if let error {
+//                        resumed = true
+//                        continuation.resume(returning: nil)
+//                        if retries > 0 {
+//                            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+//                                self.transcribeWithRetry(msg, retries: retries - 1)
+//                            }
+//                        }
+//                    }
+//                }
+//            }
+//            if let text = result {
+//                print("✅ transcription: \(text)")
+//            } else {
+//                print("❌ transcription returned nil")
+//            }
+//            
+//            try? FileManager.default.removeItem(at: tempURL)
+//            
+//            await MainActor.run {
+//                if let text = result, let i = self.radioMessages.firstIndex(where: { $0.id == msg.id }) {
+//                    self.radioMessages[i].transcription = text
+//                }
+//                if result != nil || retries == 0 {
+//                    self.processTranscriptionQueue()
+//                }
+//            }
+//        }
+//    }
     
     private func enqueue(topic: String, payload: [String: Any]) {
         guard delaySeconds > 0 else {

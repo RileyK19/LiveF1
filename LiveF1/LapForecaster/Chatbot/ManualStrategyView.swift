@@ -162,7 +162,7 @@ struct ManualStrategyView: View {
             EditableStint(
                 lapStart: stint.lapStart,
                 lapEnd: stint.lapEnd ?? totalLaps,
-                compound: TyreCompound(rawValue: stint.compound) ?? .medium
+                compound: TyreCompound(rawValue: stint.compound ?? "UNKNOWN") ?? .hard
             )
         }
         if stints.isEmpty { addStint() }

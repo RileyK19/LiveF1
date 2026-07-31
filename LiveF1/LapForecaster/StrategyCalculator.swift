@@ -28,7 +28,7 @@ final class StrategyCalculator {
         trackModel: TrackEvolutionCalculator.TrackEvolutionModel,
         models: [TyreCompound: DegradationModel]
     ) -> Double {
-        let compound = TyreCompound(rawValue: stint.compound) ?? .unknown
+        let compound = TyreCompound(rawValue: stint.compound ?? "UNKNOWN") ?? .unknown
         let tyreAge = (lap - stint.lapStart) + stint.tyreAgeAtStart
         let trackDelta = trackModel.evolution(atLap: lap)
         guard let model = models[compound] else { return median }

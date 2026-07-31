@@ -69,12 +69,13 @@ private struct DriverStandingsTab: View {
     var body: some View {
         List {
             ForEach(store.driverStandings) { standing in
-                NavigationLink {
-                    SeasonStoryView()
-                        .environmentObject(ChampionshipDataStore())
-                } label: {
+//                NavigationLink {
+//                    SeasonStoryView()
+//                        .environmentObject(ChampionshipDataStore())
+//                } label: {
                     DriverStandingRow(standing: standing, leaderPoints: leaderPoints)
-                }
+                // Maybe add back the season story view later with some tweeks
+//                }
             }
         }
         .listStyle(.plain)

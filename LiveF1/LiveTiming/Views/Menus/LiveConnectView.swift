@@ -61,6 +61,7 @@ struct LiveConnectView: View {
                     )
                     .padding(.horizontal, 20)
                 }
+                .buttonStyle(.plain)
                 
 //                ConnectionRowCard(icon: "key", value: $token, title: "(Opt) F1TV Login", titleKey: token.isEmpty ? "Not logged in" : "Logged in", color: .blue, onPress: {
 //                    if token.isEmpty {
