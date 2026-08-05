@@ -1,295 +1,181 @@
 # LiveF1 🏎️
 
-A native iOS app for real-time Formula 1 timing, championship data, race documentation, and on-device AI strategy analysis — built entirely in Swift with **zero third-party dependencies**.
+A native iOS app for real-time Formula 1 timing, telemetry analysis, race strategy prediction, and race documentation — built entirely in Swift, running almost every intelligence feature **on-device** with Apple's own frameworks.
 
-LiveF1 connects directly to F1's official SignalR Core live timing stream (the same feed that powers professional tools like MultiViewer), tracks the full championship season, transcribes team radio on-device, summarizes FIA documents with Apple's on-device Foundation Models, and turns lap/stint data into a conversational race strategy assistant — all using nothing but Apple's own frameworks.
-
-## Testflight: https://testflight.apple.com/join/gW1asZnR
+**TestFlight:** https://testflight.apple.com/join/gW1asZnR
 
 <p align="center">
-  <img src="LiveF1/Examples/HomePage.png" width="260" />
-  <img src="LiveF1/Examples/LiveTimingScreen.png" width="260" />
-  <img src="LiveF1/Examples/HypotheticalStrategy.png" width="260" />
+  <img src="LiveF1/Examples/HomePage3.png" width="260" />
+  <img src="LiveF1/Examples/LiveTimingScreen2.png" width="260" />
+  <img src="LiveF1/Examples/HypotheticalStrategyChart.png" width="260" />
 </p>
+
+## Why I built this
+
+I've been a race fan since I was a kid and, at the track, there's no clean way to follow live timing on your phone. Off the track, most F1 apps bury the data behind logins, ads, and unnecessary complexity just to check a lap time or read a stewards' bulletin. LiveF1 is my attempt at the app I actually wanted: fast, simple, and focused — live timing, telemetry, and race intelligence in one place, with no backend of my own and no account required to use the core features.
+
+There's no server behind this app. Every screen is powered by a direct API/WebSocket connection or by on-device computation — no database, no backend infrastructure to maintain.
 
 ## Features
 
-- **Live Timing** — Real-time timing tower fed directly from F1's live WebSocket stream, with sub-second updates
-- **Replay** — Browse and replay historical sessions from `.jsonStream` archives at configurable speed
-- **Championship Schedule** — Full season calendar with session times converted to your local timezone, with per-track SVG layouts
-- **Standings** — Driver and constructor standings with points visualizations
-- **Team Radio** — On-device transcription of team radio clips, no audio ever leaves the phone
-- **FIA Documents** — Official race bulletins, fetched live and summarized on-device with Apple's Foundation Models
-- **Strategy Assistant** — A conversational chatbot, grounded in real lap and stint data, that explains and compares hypothetical race strategies
+### Live Timing
+- Real-time timing tower, driver tracker, race control feed, and team radio log, streamed directly from Formula 1's official SignalR Core live timing WebSocket
+- Optional F1TV login through an embedded `WKWebView` — the login flow happens entirely on F1's own pages, and the app only extracts the resulting auth token to unlock live car telemetry over the WebSocket. Credentials never touch app code.
+- Team radio clips are transcribed **on-device** with WhisperKit — no audio leaves the phone
 
-## Why this project
+### Telemetry & Race Pace
+- Past-lap telemetry comparison via the OpenF1 API — speed, brake, throttle, and gear traces for any two laps, with a running delta plotted across the lap
+- Race pace box-and-whisker plots per driver/stint, also from OpenF1, for at-a-glance pace and consistency comparisons
 
-Most "F1 app" projects wrap a REST API. This one doesn't have that luxury for most of its core features — F1's live timing protocol is an undocumented binary SignalR Core stream, the FIA's document portal is a JS-rendered page with no public API, and there's no off-the-shelf way to turn raw lap data into strategy advice. Building LiveF1 meant reverse-engineering the data pipelines from network traffic and wiring up on-device AI for the rest, using only first-party Apple tooling: `URLSessionWebSocketTask`, `Compression`, `WKWebView`, `Speech`, `FoundationModels`, and `Security`.
+### Strategy Predictor
+- A what-if strategy predictor that models tyre degradation, track evolution, compound choice, and tyre age against session pace to generate candidate strategies from OpenF1 data
+- A conversational chatbot built on Apple's on-device **Foundation Models** framework lets you ask about and compare those strategies in natural language — the model explains and narrates, but every number it references comes from the underlying degradation/pace algorithm, not from the LLM itself, so it stays grounded instead of hallucinating lap times or compounds
+
+### FIA Documents
+- Official FIA race documents and bulletins, scraped live from the FIA's document portal (which has no public API) via a hidden, off-screen `WKWebView`
+- Summarized entirely **on-device** with Foundation Models — document text and summaries never leave the phone
+- Both AI features degrade gracefully to a plain document list / manual strategy view on devices without Apple Intelligence
+
+### Championship & Race Story
+- Full schedule, results, and driver/constructor standings from the Ergast/Jolpica API, with `current` auto-resolving to the active season
+- A "Race Story" chart plotting every driver's position by lap across a race
+- Per-circuit SVG track layouts (credited below)
+
+### Weather
+- Track-level weather forecasts for the upcoming race weekend via **WeatherKit**
+
+### Widgets
+- Home Screen and Lock Screen widgets (WidgetKit) showing the countdown to the next session, backed by a shared App Group cache — the widget extension never makes its own network calls
+
+## Built with Apple-first tooling
+
+This app leans deliberately on first-party Apple frameworks rather than reaching for third-party SDKs:
+
+| Purpose | Framework |
+|---|---|
+| Live WebSocket connection to F1's timing feed | `URLSessionWebSocketTask` |
+| Telemetry decompression (`CarData.z`, `Position.z`) | `Compression` |
+| F1TV login + FIA document scraping | `WKWebView` |
+| On-device document summarization & strategy chat | `FoundationModels` (Apple Intelligence) |
+| On-device team radio transcription | WhisperKit (on-device Whisper, the one third-party dependency in the project) |
+| Auth token storage | `Security` (Keychain) |
+| Track weather forecasts | `WeatherKit` |
+| Charts (telemetry traces, pace plots, race story) | Swift Charts |
+| Home/Lock Screen widgets | `WidgetKit` |
+| Concurrency throughout | Swift Concurrency (`async/await`, `@MainActor`, `withTaskGroup`) |
+
+No backend server, no database — every feature is either a direct API/WebSocket call or an on-device computation.
 
 ## Technical highlights
 
 **Real-time WebSocket data pipeline**
-- Connects to F1's SignalR Core endpoint and handles the full negotiation, handshake, and subscription flow
-- Processes binary-framed delta messages (record-separator delimited) at ~10 updates/second during a live session
-- Deep-merges partial state patches into full session state, handling both array- and dict-shaped deltas
-- Decompresses zlib-encoded telemetry topics (`CarData.z`, `Position.z`) using Apple's `Compression` framework
+- Negotiates and connects to F1's SignalR Core endpoint, handling the full negotiation, handshake, and subscription flow
+- Parses binary-framed, record-separator-delimited delta messages at ~10 updates/second during a live session
+- Deep-merges partial state patches into full session state, handling both array- and dict-shaped deltas — F1's feed inconsistently represents the same logical data as either, depending on the update
+- Decompresses zlib-encoded telemetry topics (`CarData.z`, `Position.z`) with the `Compression` framework
 
-**On-device generative AI with Foundation Models**
-- FIA document summaries are generated entirely on-device with Apple's `FoundationModels` framework — no document text or summary ever leaves the phone
-- The Strategy Assistant chatbot is grounded in actual session data: `StrategyContextBuilder` assembles lap, stint, and degradation data into model context, and `StrategyTranslator` turns model output back into structured strategy comparisons the UI can render
-- Both features degrade gracefully on devices without Apple Intelligence support, falling back to the raw document list / manual strategy view
+**On-device generative AI, grounded in real data**
+- FIA document summaries and the Strategy Assistant chatbot both run entirely on-device via `FoundationModels` — nothing is sent to a third-party inference service
+- `StrategyContextBuilder` packages lap, stint, and degradation data as model context; `StrategyTranslator` maps model output back into structured, renderable strategy comparisons
+- Underlying strategy math (degradation curves, track evolution, compound/pace tradeoffs) is computed algorithmically — Foundation Models narrates and compares, it doesn't invent the numbers
 
 **Headless-browser data extraction (FIA Documents)**
-- No public FIA API exists, so a hidden, off-screen `WKWebView` loads the live document portal and polls it for content
-- Injected JavaScript walks the DOM to extract document title, category, publish date, and PDF link for every result, falling back gracefully through `aria-label` → visible text → filename when structured titles aren't present
-- Handles the portal's redirect-to-current-season behavior, then paginates by rewriting the resolved URL's `page` query parameter
-- Detects "stuck" pagination (the site re-serving the same page past the last valid one) by diffing extracted link counts between pages, with a re-check tick to avoid false positives from slow renders
-- Wrapped in `async/await` via `withCheckedContinuation`, with a polling loop, per-page timeout, and graceful partial-results fallback if the page hangs
-
-**Swift concurrency throughout**
-- `async/await` for all network operations, including the JS-bridge calls into `WKWebView` and Foundation Models generation
-- `@MainActor` session and document stores keep UI updates pinned to the main thread
-- Sequential transcription queue using `withCheckedContinuation` to respect Apple Speech's concurrency limits
-- `withTaskGroup` for concurrent replay stream fetching
+- No public FIA API exists, so a hidden, off-screen `WKWebView` loads the live document portal and polls it for rendered content
+- Injected JavaScript walks the DOM to extract title, category, date, and PDF link per document, falling back through `aria-label` → visible text → filename when structured titles aren't present
+- Handles the portal's redirect-to-current-season behavior, then paginates by rewriting the resolved URL's `page` parameter, detecting "stuck" pagination by diffing link counts between pages
+- Wrapped in `async/await` via `withCheckedContinuation`, with a polling loop, per-page timeout, and graceful partial-results fallback
 
 **Authentication**
-- F1TV login via `WKWebView` with cookie extraction — credentials never leave F1's servers or touch app code
-- JWT stored in iOS Keychain via the `Security` framework
-- Graceful degradation: basic timing works with no auth, telemetry unlocks with an F1TV subscription
+- F1TV login happens inside `WKWebView`; the app extracts only the resulting cookie/token, never handling credentials directly
+- JWT stored in the iOS Keychain via `Security`
+- Graceful degradation: basic timing works with no auth at all; telemetry unlocks with an F1TV subscription
 
-**On-device ML**
-- Team radio MP3s are downloaded and transcribed locally with `SFSpeechRecognizer`
-- No audio, document text, or strategy context is ever sent to a third-party service
+**Swift concurrency throughout**
+- `async/await` for all networking, including JS-bridge calls into `WKWebView` and Foundation Models generation
+- `@MainActor` session and document stores keep UI updates pinned to the main thread
+- Sequential transcription queue to respect on-device Whisper's concurrency limits
+- `withTaskGroup` for concurrent replay stream fetching
 
 ## Architecture
 
-### Live timing — `LiveTiming/`
-- `F1TimingClient` — SignalR Core negotiation, WebSocket frame parsing, zlib decompression
-- `F1SessionStore` (`@MainActor`) — deep-merges deltas into session state, queues radio transcription, publishes `[Driver]`
-- `F1TimingParser` — pure function: raw payload → typed `[Driver]`, no side effects
-- `F1DataSource` protocol — lets live (`F1TimingClient`) and replay (`F1ReplayClient`) clients swap in transparently without touching the store or views
-- `TokenStore` — Keychain-backed JWT storage
+```
+LiveF1/
+├── ChampionshipInfo/        # Schedule, standings, race story, per-circuit SVGs
+├── FiaDocuments/            # Headless WKWebView scraper + Foundation Models summarization
+├── LapForecaster/           # Strategy predictor, degradation model, chatbot
+│   └── Chatbot/             # FoundationModels-grounded strategy assistant
+├── LiveTiming/              # SignalR client, session store, timing tower, radio, race control
+├── StaticTelemetry/         # OpenF1-backed lap comparison + race pace plots
+├── WeatherData/             # WeatherKit track forecasts
+└── Views/                   # Top-level navigation, settings, credits
 
-### Championship data — `ChampionshipInfo/`
-- `ChampionshipDataStore` — `ObservableObject` that fetches and caches schedule/standings data
-- Sourced from the [Jolpi Ergast API](https://api.jolpi.ca/ergast/f1); responses cached in `UserDefaults` with a 1-hour TTL
-- `ChampionshipModels` — race, session, driver/constructor standing, and cache-entry models
-- `F1DBTrackSVGs/` — per-circuit SVG track layouts rendered in `ChampionshipTrackView`
+LiveF1Widget/                # WidgetKit extension (Home Screen + Lock Screen)
+```
 
-### FIA Documents — `FiaDocuments/`
-- `FIADocumentFetcher` — drives a hidden `WKWebView` through the FIA document portal, polls for rendered PDF links, injects an extraction script, and paginates until no new documents appear
-- `FIADocumentStore` — owns fetched documents and routes them through Foundation Models for on-device summarization
-- `FIADocumentsView` — document list with AI summaries, screenshots below
+### Live timing pipeline
+```
+F1 SignalR Server
+   │ WebSocket frames (record-separator delimited)
+   ▼
+F1TimingClient        — negotiation, WebSocket, frame parsing, zlib decompression
+   ▼
+F1SessionStore (@MainActor) — deep-merges deltas, queues radio transcription
+   ▼
+F1TimingParser (pure function) — raw payload → typed [Driver]
+   ▼
+SwiftUI Views — re-render on @Published changes
+```
 
-### Race Strategy / Lap Forecaster — `LapForecaster/`
-- `F1LapParser` / `F1PredictorStintParser` / `F1PredictorSessionParser` — turn raw session data into typed lap, stint, and session models
-- `DegradationModel` / `TrackEvolutionCalculator` — model tyre degradation and track evolution over a run
-- `StrategyCalculator` — generates hypothetical strategies (stop counts, compounds, windows) from the above models
-- `Chatbot/` — `StrategyContextBuilder` packages live strategy data as model context, `StrategyAssistantView` is the conversational UI, `StrategyTranslator` maps model output back into structured, renderable strategy comparisons; `ManualStrategyView` is the non-AI fallback
-- `ViewModels/` — `RaceViewModel`, `SessionPickerViewModel` drive `RaceDetailView` and `SessionPickerView`
+### FIA document pipeline
+```
+Hidden WKWebView → injected extraction script → FIADocumentFetcher
+   (loads portal, polls,        (walks DOM for       (dedupes, paginates
+    handles redirect)            PDF links + meta)     until no new docs)
+   ▼
+FIADocumentStore — sorts, sends text to on-device FoundationModels
+   ▼
+FIADocumentsView — document list + on-device AI summary
+```
 
-### Views — `Views/` and per-feature `Views/` folders
-- `HomeView` — dashboard with navigation to all features
-- `TimingTowerDetails` / `DriverDetails` — live timing tower and per-driver telemetry
-- `RadioDetails` — toast notifications + transcribed radio list
-- `Menus` — `F1LoginWebView`, `LiveConnectView`, `ReplayPickerView`
-- `DebugTabView`, `SettingsView`, `CreditsView`
+### Strategy predictor pipeline
+```
+OpenF1 lap/stint data
+   ▼
+DegradationModel + TrackEvolutionCalculator — tyre falloff, track grip evolution
+   ▼
+StrategyCalculator — candidate strategies (stops, compounds, windows)
+   ▼
+StrategyContextBuilder → FoundationModels (on-device) → StrategyTranslator
+   ▼
+StrategyAssistantView — conversational, grounded strategy comparison
+```
 
 ## Screenshots
 
 | Home | Live Timing | Schedule |
 |---|---|---|
-| ![Home](LiveF1/Examples/HomePage.png) | ![Live Timing](LiveF1/Examples/LiveTimingScreen.png) | ![Schedule](LiveF1/Examples/ScheduleScreen.png) |
+| ![Home](LiveF1/Examples/HomePage3.png) | ![Live Timing](LiveF1/Examples/LiveTimingScreen2.png) | ![Schedule](LiveF1/Examples/ScheduleScreen.png) |
+
+| Tracker | Speed Trace | Pace |
+|---|---|---|
+| ![Tracker](LiveF1/Examples/DriverTracker.png) | ![Trace](LiveF1/Examples/SpeedTrace.png) | ![Pace](LiveF1/Examples/RacePace.png) |
 
 | Driver Standings | Stint Details | Hypothetical Strategy |
 |---|---|---|
-| ![Standings](LiveF1/Examples/DriversStandingsScreen.png) | ![Stints](LiveF1/Examples/StintDetails.png) | ![Strategy](LiveF1/Examples/HypotheticalStrategy.png) |
+| ![Standings](LiveF1/Examples/DriversStandingsScreen.png) | ![Stints](LiveF1/Examples/StintDetails.png) | ![Strategy](LiveF1/Examples/HypotheticalStrategyChart.png) |
 
 | FIA Document List | FIA Document Summary |
 |---|---|
 | ![FIA List](LiveF1/Examples/FiaDocumentList.png) | ![FIA Summary](LiveF1/Examples/FiaDocumentExample.png) |
 
-## How the live timing pipeline works
+## Data sources
 
-```
-F1 SignalR Server
-       │  WebSocket frames (record-separator delimited)
-       ▼
-F1TimingClient
-  • Negotiates connection ID via HTTP POST
-  • Opens WebSocket with Bearer auth
-  • Parses SignalR frame types (1=data, 3=snapshot, 6=ping)
-  • Decompresses .z topics (base64 → zlib → JSON)
-       │
-       ▼
-F1SessionStore (@MainActor)
-  • Deep-merges delta into rawTopics[topic]
-  • Handles array/dict index merging for sector updates
-  • Publishes drivers: [Driver] on every update
-       │
-       ▼
-F1TimingParser (pure function)
-  • Reads TimingData, DriverList, TimingStats, TimingAppData
-  • Produces sorted [Driver] with positions, gaps, sectors, tyres
-       │
-       ▼
-SwiftUI Views — re-render on @Published changes
-```
-
-## How the FIA document pipeline works
-
-```
-Hidden WKWebView
-  • Loads FIA season document portal (redirects to current season)
-  • Polls every 1s for rendered PDF link count, up to a 30s timeout
-       │
-       ▼
-Injected extraction script
-  • Walks DOM for every <a href> containing ".pdf"
-  • Resolves title (aria-label → text → filename fallback)
-  • Walks ancestor nodes for category + date metadata
-       │
-       ▼
-FIADocumentFetcher
-  • Decodes JSON payload into [FIADocument]
-  • Dedupes by relative URL path
-  • Rewrites ?page= and reloads until no new docs / content repeats
-       │
-       ▼
-FIADocumentStore
-  • Sorts dated documents
-  • Sends document text to FoundationModels (on-device) for summarization
-       │
-       ▼
-FIADocumentsView — document list + on-device AI summary
-```
-
-## How the Strategy Assistant works
-
-```
-Session lap / stint data
-       │
-       ▼
-F1LapParser, F1PredictorStintParser, F1PredictorSessionParser
-  • Raw timing payload → typed laps, stints, sessions
-       │
-       ▼
-DegradationModel + TrackEvolutionCalculator
-  • Model tyre falloff and track grip evolution over a run
-       │
-       ▼
-StrategyCalculator
-  • Produces candidate strategies (stops, compounds, windows)
-       │
-       ▼
-StrategyContextBuilder
-  • Packages strategies + live data as grounded context
-       │
-       ▼
-FoundationModels (on-device)
-  • Generates natural-language strategy explanation/comparison
-       │
-       ▼
-StrategyTranslator → StrategyAssistantView
-  • Maps model output back to structured, renderable comparisons
-```
-
-## Project structure
-
-```
-LiveF1/
-├── ChampionshipInfo/
-│   ├── ChampionshipDataStore.swift
-│   ├── ChampionshipModels.swift
-│   ├── ChampionshipScheduleView.swift
-│   ├── ChampionshipStandingsView.swift
-│   ├── ChampionshipTrackView.swift
-│   └── F1DBTrackSVGs/             # Per-circuit SVG track layouts
-├── FiaDocuments/
-│   ├── FIADocumentFetcher.swift   # Headless WKWebView scraper
-│   ├── FIADocumentStore.swift     # State + Foundation Models summarization
-│   └── FIADocumentsView.swift
-├── LapForecaster/
-│   ├── Chatbot/
-│   │   ├── ManualStrategyView.swift
-│   │   ├── StrategyAssistantView.swift
-│   │   ├── StrategyContextBuilder.swift
-│   │   └── StrategyTranslator.swift
-│   ├── Degradation/
-│   │   ├── DegradationModel.swift
-│   │   └── TrackEvolutionCalculator.swift
-│   ├── Laps/
-│   │   ├── F1LapModels.swift
-│   │   └── F1LapParser.swift
-│   ├── Sessions/
-│   │   ├── F1PredictorSession.swift
-│   │   └── F1PredictorSessionParser.swift
-│   ├── Stints/
-│   │   ├── F1PredictorStint.swift
-│   │   └── F1PredictorStintParser.swift
-│   ├── StrategyCalculator.swift
-│   ├── ViewModels/
-│   │   ├── RaceViewModel.swift
-│   │   └── SessionPickerViewModel.swift
-│   └── Views/
-│       ├── LapTimeChartView.swift
-│       ├── RaceDetailView.swift
-│       └── SessionPickerView.swift
-├── LiveTiming/
-│   ├── DataClients/
-│   │   ├── F1ReplayClient.swift
-│   │   └── F1TimingClient.swift
-│   ├── DataStores/
-│   │   ├── F1SessionStore.swift
-│   │   ├── F1TimingParser.swift
-│   │   └── TokenStore.swift
-│   ├── Models/
-│   │   ├── CarTelemetry.swift
-│   │   ├── ColorHelper.swift
-│   │   ├── Driver.swift
-│   │   ├── F1DataSource.swift
-│   │   └── RadioMessage.swift
-│   └── Views/
-│       ├── DriverDetails/
-│       ├── Menus/
-│       ├── RadioDetails/
-│       └── TimingTowerDetails/
-├── Examples/                      # Screenshots used in this README
-└── Views/
-    ├── ContentView.swift
-    ├── CreditsView.swift
-    ├── DebugTabView.swift
-    ├── HomeView.swift
-    └── SettingsView.swift
-```
-
-## Widget
-
-LiveF1 includes a Home Screen and Lock Screen widget showing the next F1 session.
-
-### Data flow
-- The main app fetches the schedule via `ChampionshipDataStore` and caches it in a **shared App Group** (`UserDefaults(suiteName: "group.com.riley.livef1")`), not `UserDefaults.standard`, so the widget extension (a separate process) can read it.
-- The widget's `NextSessionProvider` (a `TimelineProvider`) reads that same shared cache — it never makes network calls itself.
-- After any successful fetch, the app calls `WidgetCenter.shared.reloadTimelines(ofKind:)` to prompt the widget to refresh.
-
-### Supported sizes
-| Family | Shows |
-|---|---|
-| `.systemSmall` | Countdown to the next session |
-| `.systemMedium` | Race name + Quali/Sprint/Race columns (+ next session if it's still practice) |
-| `.accessoryCircular` | Lock Screen — short label + countdown |
-| `.accessoryRectangular` | Lock Screen — race name + key session times |
-| `.accessoryInline` | Lock Screen — single line next to the clock |
-
-### Setup requirements
-- **App Group** `group.com.riley.livef1` must be enabled under Signing & Capabilities on **both** the main app target and the widget extension target, with an identical entitlement string in both `.entitlements` files.
-- Shared model files (`ChampionshipRace`, `ChampionshipSession`, `ChampionshipCacheEntry`, etc.) must have **target membership** checked for the widget extension, or the widget won't compile/decode the cache.
-- Lock Screen widget views must avoid custom colors — the system applies its own tint, so styling relies on bold/underline instead of color for emphasis.
-
-### Key files
-- `WidgetProvider.swift` — `NextSessionEntry` + `NextSessionProvider`
-- `NextSessionWidget.swift` — `Widget` declaration, `supportedFamilies`
-- `NextSessionViews.swift` — per-family SwiftUI views
+- **Live timing & telemetry:** F1's official SignalR Core stream (reverse-engineered, undocumented)
+- **Historical telemetry & race pace:** [OpenF1 API](https://openf1.org)
+- **Schedule, results, standings:** [Ergast/Jolpica mirror](https://api.jolpi.ca/ergast/f1)
+- **FIA documents:** live-scraped from the official FIA document portal
+- **Weather:** Apple WeatherKit
+- **Track layouts:** SVG circuit maps from the [F1DB project](https://github.com/f1db/f1db) (see Credits)
 
 ## Setup
 
@@ -306,27 +192,20 @@ LiveF1 includes a Home Screen and Lock Screen widget showing the next F1 session
 - Swift 6
 - An Apple Intelligence-compatible device for on-device FIA summaries and the Strategy Assistant chatbot (both features fall back to non-AI views otherwise)
 
-No API keys, no third-party SDKs, no CocoaPods or SPM dependencies.
-
-## Data sources
-
-- Live timing: F1's official SignalR Core stream (reverse-engineered, undocumented)
-- Championship schedule & standings: [Jolpi Ergast Mirror](https://api.jolpi.ca/ergast/f1) — `current` resolves automatically to the active season, so no yearly code changes are needed
-- FIA documents: live-scraped from the official FIA document portal via headless `WKWebView`
-- Strategy data: derived entirely from session lap/stint data already pulled by the live timing and replay clients
-
-## Caching
-
-Championship API responses are cached locally for 1 hour. Pull to refresh forces a network fetch and updates the cache. Cache lives in `UserDefaults` and can be cleared via `ChampionshipDataStore.clearCache()`.
-
 ## What I learned building this
 
-- Reverse-engineering an undocumented SignalR Core protocol from raw network traffic
-- Handling F1's inconsistent delta merge format, where the same logical data shows up as an array in one update and a dict in the next
-- Driving a hidden `WKWebView` as a structured data source — polling for render completion, injecting extraction scripts, and detecting pagination dead-ends without a real API to lean on
+- Reverse-engineering an undocumented SignalR Core protocol from raw network traffic, including F1's inconsistent array/dict delta merge format
+- Driving a hidden `WKWebView` as a structured data source — polling for render completion, injecting extraction scripts, and detecting pagination dead-ends with no real API to lean on
 - Grounding Foundation Models output in real session data so summaries and strategy advice stay factual instead of hallucinating lap times or compound choices
-- Managing Apple Speech's concurrency constraints with a sequential task queue
+- Managing on-device speech transcription concurrency with a sequential task queue
+- Sharing state across a process boundary (main app ↔ widget extension) via an App Group, and the target-membership/entitlement gotchas that come with it
 - The practical tradeoffs of a fat store vs. strict MVVM for real-time streaming data in SwiftUI
+
+## Credits
+
+- Track SVG layouts adapted from the [F1DB project](https://github.com/f1db/f1db)
+- Telemetry and race pace data via [OpenF1](https://openf1.org)
+- Schedule/standings data via [Jolpica-F1 / Ergast API](https://api.jolpi.ca/ergast/f1)
 
 ### License
 

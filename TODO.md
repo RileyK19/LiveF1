@@ -12,3 +12,4 @@
 - improve transcription of radios
 - race control popover thing - race control + radio 
     - reuse toast + interface prob
+- notif times 

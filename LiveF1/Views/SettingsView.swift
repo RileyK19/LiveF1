@@ -44,6 +44,19 @@ struct SettingsView: View {
                         Label("Credits", systemImage: "person.2.fill")
                     }
                 }
+                Section("Privacy") {
+                    Link(destination: URL(string: "https://verdant-gaura-e8e.notion.site/Privacy-Policy-3afaa40c994480b09b42cb7ad12dbfa0?source=copy_link")!, label: {
+                            Text("Privacy Policy")
+                                .font(.headline)
+                                .foregroundColor(.blue)
+                        }
+                    )
+                }
+                Section("Contact") {
+                    Link("Email me", destination: URL(string: "mailto:rileykoo19@gmail.com")!)
+                        .font(.headline)
+                        .foregroundColor(.blue)
+                }
             }
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
