@@ -55,7 +55,7 @@ struct SettingsView: View {
                     )
                 }
                 Section("Contact") {
-                    Link("Email me", destination: URL(string: "mailto:rileykoo19@gmail.com")!)
+                    Link("rileykoo19@gmail.com", destination: URL(string: "mailto:rileykoo19@gmail.com")!)
                         .font(.headline)
                         .foregroundColor(.blue)
                 }

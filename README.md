@@ -1,4 +1,4 @@
-# LiveF1 🏎️
+# Redline - Formula Telemetry & Live Timing 🏎️
 
 A native iOS app for real-time Formula 1 timing, telemetry analysis, race strategy prediction, and race documentation — built entirely in Swift, running almost every intelligence feature **on-device** with Apple's own frameworks.
 

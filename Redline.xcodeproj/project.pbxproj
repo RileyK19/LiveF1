@@ -11,7 +11,7 @@
 		58CA57312FF17B7A00772EAB /* PocketSVG in Frameworks */ = {isa = PBXBuildFile; productRef = 58CA57302FF17B7A00772EAB /* PocketSVG */; };
 		58CA57522FF7813A00772EAB /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 58CA57512FF7813A00772EAB /* WidgetKit.framework */; };
 		58CA57542FF7813A00772EAB /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 58CA57532FF7813A00772EAB /* SwiftUI.framework */; };
-		58CA57632FF7813C00772EAB /* LiveF1WidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 58CA574F2FF7813A00772EAB /* LiveF1WidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		58CA57632FF7813C00772EAB /* RedlineWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 58CA574F2FF7813A00772EAB /* RedlineWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		58CA57952FF783CC00772EAB /* PocketSVG in Frameworks */ = {isa = PBXBuildFile; productRef = 58CA57942FF783CC00772EAB /* PocketSVG */; };
 		58D674D82FD56F1500E13D17 /* NotificationLog in Frameworks */ = {isa = PBXBuildFile; productRef = 58D674D72FD56F1500E13D17 /* NotificationLog */; };
 		58D674EA2FD56F7A00E13D17 /* .gitignore in Resources */ = {isa = PBXBuildFile; fileRef = 58D674E92FD56F7A00E13D17 /* .gitignore */; };
@@ -36,7 +36,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 13;
 			files = (
-				58CA57632FF7813C00772EAB /* LiveF1WidgetExtension.appex in Embed Foundation Extensions */,
+				58CA57632FF7813C00772EAB /* RedlineWidgetExtension.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -45,31 +45,31 @@
 
 /* Begin PBXFileReference section */
 		58C0B0622FDE46D300C7BCC6 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
-		58CA574F2FF7813A00772EAB /* LiveF1WidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = LiveF1WidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		58CA574F2FF7813A00772EAB /* RedlineWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = RedlineWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		58CA57512FF7813A00772EAB /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		58CA57532FF7813A00772EAB /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		58CA57962FF7875400772EAB /* LiveF1WidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = LiveF1WidgetExtension.entitlements; sourceTree = "<group>"; };
-		58D674AF2FD1879100E13D17 /* LiveF1.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LiveF1.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		58D674AF2FD1879100E13D17 /* Redline.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Redline.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		58D674E92FD56F7A00E13D17 /* .gitignore */ = {isa = PBXFileReference; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
 		58F8119C300BDB5E00B252C2 /* TODO.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = TODO.md; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		58CA56B72FE1AFFA00772EAB /* Exceptions for "LiveF1" folder in "LiveF1" target */ = {
+		58CA56B72FE1AFFA00772EAB /* Exceptions for "LiveF1" folder in "Redline" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
 			);
-			target = 58D674AE2FD1879100E13D17 /* LiveF1 */;
+			target = 58D674AE2FD1879100E13D17 /* Redline */;
 		};
-		58CA57672FF7813C00772EAB /* Exceptions for "LiveF1Widget" folder in "LiveF1WidgetExtension" target */ = {
+		58CA57672FF7813C00772EAB /* Exceptions for "LiveF1Widget" folder in "RedlineWidgetExtension" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
 			);
-			target = 58CA574E2FF7813A00772EAB /* LiveF1WidgetExtension */;
+			target = 58CA574E2FF7813A00772EAB /* RedlineWidgetExtension */;
 		};
-		58CA576C2FF781AD00772EAB /* Exceptions for "LiveF1" folder in "LiveF1WidgetExtension" target */ = {
+		58CA576C2FF781AD00772EAB /* Exceptions for "LiveF1" folder in "RedlineWidgetExtension" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				ChampionshipInfo/ChampionshipDataStore.swift,
@@ -109,7 +109,7 @@
 				LiveTiming/Models/ColorHelper.swift,
 				Menus/SpoilerWarningView.swift,
 			);
-			target = 58CA574E2FF7813A00772EAB /* LiveF1WidgetExtension */;
+			target = 58CA574E2FF7813A00772EAB /* RedlineWidgetExtension */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
@@ -117,8 +117,8 @@
 		58CA567F2FE1AFFA00772EAB /* LiveF1 */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				58CA56B72FE1AFFA00772EAB /* Exceptions for "LiveF1" folder in "LiveF1" target */,
-				58CA576C2FF781AD00772EAB /* Exceptions for "LiveF1" folder in "LiveF1WidgetExtension" target */,
+				58CA56B72FE1AFFA00772EAB /* Exceptions for "LiveF1" folder in "Redline" target */,
+				58CA576C2FF781AD00772EAB /* Exceptions for "LiveF1" folder in "RedlineWidgetExtension" target */,
 			);
 			path = LiveF1;
 			sourceTree = "<group>";
@@ -126,7 +126,7 @@
 		58CA57552FF7813A00772EAB /* LiveF1Widget */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				58CA57672FF7813C00772EAB /* Exceptions for "LiveF1Widget" folder in "LiveF1WidgetExtension" target */,
+				58CA57672FF7813C00772EAB /* Exceptions for "LiveF1Widget" folder in "RedlineWidgetExtension" target */,
 			);
 			path = LiveF1Widget;
 			sourceTree = "<group>";
@@ -183,8 +183,8 @@
 		58D674B02FD1879100E13D17 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				58D674AF2FD1879100E13D17 /* LiveF1.app */,
-				58CA574F2FF7813A00772EAB /* LiveF1WidgetExtension.appex */,
+				58D674AF2FD1879100E13D17 /* Redline.app */,
+				58CA574F2FF7813A00772EAB /* RedlineWidgetExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -192,9 +192,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		58CA574E2FF7813A00772EAB /* LiveF1WidgetExtension */ = {
+		58CA574E2FF7813A00772EAB /* RedlineWidgetExtension */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 58CA57642FF7813C00772EAB /* Build configuration list for PBXNativeTarget "LiveF1WidgetExtension" */;
+			buildConfigurationList = 58CA57642FF7813C00772EAB /* Build configuration list for PBXNativeTarget "RedlineWidgetExtension" */;
 			buildPhases = (
 				58CA574B2FF7813A00772EAB /* Sources */,
 				58CA574C2FF7813A00772EAB /* Frameworks */,
@@ -207,17 +207,17 @@
 			fileSystemSynchronizedGroups = (
 				58CA57552FF7813A00772EAB /* LiveF1Widget */,
 			);
-			name = LiveF1WidgetExtension;
+			name = RedlineWidgetExtension;
 			packageProductDependencies = (
 				58CA57942FF783CC00772EAB /* PocketSVG */,
 			);
 			productName = LiveF1WidgetExtension;
-			productReference = 58CA574F2FF7813A00772EAB /* LiveF1WidgetExtension.appex */;
+			productReference = 58CA574F2FF7813A00772EAB /* RedlineWidgetExtension.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
-		58D674AE2FD1879100E13D17 /* LiveF1 */ = {
+		58D674AE2FD1879100E13D17 /* Redline */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 58D674BA2FD1879400E13D17 /* Build configuration list for PBXNativeTarget "LiveF1" */;
+			buildConfigurationList = 58D674BA2FD1879400E13D17 /* Build configuration list for PBXNativeTarget "Redline" */;
 			buildPhases = (
 				58D674AB2FD1879100E13D17 /* Sources */,
 				58D674AC2FD1879100E13D17 /* Frameworks */,
@@ -232,14 +232,14 @@
 			fileSystemSynchronizedGroups = (
 				58CA567F2FE1AFFA00772EAB /* LiveF1 */,
 			);
-			name = LiveF1;
+			name = Redline;
 			packageProductDependencies = (
 				58D674D72FD56F1500E13D17 /* NotificationLog */,
 				58CA57302FF17B7A00772EAB /* PocketSVG */,
 				58F811C1301D4E1900B252C2 /* WhisperKit */,
 			);
 			productName = LiveF1;
-			productReference = 58D674AF2FD1879100E13D17 /* LiveF1.app */;
+			productReference = 58D674AF2FD1879100E13D17 /* Redline.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -260,7 +260,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 58D674AA2FD1879100E13D17 /* Build configuration list for PBXProject "LiveF1" */;
+			buildConfigurationList = 58D674AA2FD1879100E13D17 /* Build configuration list for PBXProject "Redline" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -279,8 +279,8 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				58D674AE2FD1879100E13D17 /* LiveF1 */,
-				58CA574E2FF7813A00772EAB /* LiveF1WidgetExtension */,
+				58D674AE2FD1879100E13D17 /* Redline */,
+				58CA574E2FF7813A00772EAB /* RedlineWidgetExtension */,
 			);
 		};
 /* End PBXProject section */
@@ -325,7 +325,7 @@
 /* Begin PBXTargetDependency section */
 		58CA57622FF7813C00772EAB /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 58CA574E2FF7813A00772EAB /* LiveF1WidgetExtension */;
+			target = 58CA574E2FF7813A00772EAB /* RedlineWidgetExtension */;
 			targetProxy = 58CA57612FF7813C00772EAB /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
@@ -523,11 +523,12 @@
 				CODE_SIGN_ENTITLEMENTS = LiveF1/LiveF1.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 7;
+				CURRENT_PROJECT_VERSION = 8;
 				DEVELOPMENT_TEAM = TMN6MFG35F;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = LiveF1/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Redline;
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Used to transcribe F1 team radio";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Used to transcribe F1 team radio";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -563,11 +564,12 @@
 				CODE_SIGN_ENTITLEMENTS = LiveF1/LiveF1.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 7;
+				CURRENT_PROJECT_VERSION = 8;
 				DEVELOPMENT_TEAM = TMN6MFG35F;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = LiveF1/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Redline;
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Used to transcribe F1 team radio";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Used to transcribe F1 team radio";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -597,7 +599,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		58CA57642FF7813C00772EAB /* Build configuration list for PBXNativeTarget "LiveF1WidgetExtension" */ = {
+		58CA57642FF7813C00772EAB /* Build configuration list for PBXNativeTarget "RedlineWidgetExtension" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				58CA57652FF7813C00772EAB /* Debug */,
@@ -606,7 +608,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		58D674AA2FD1879100E13D17 /* Build configuration list for PBXProject "LiveF1" */ = {
+		58D674AA2FD1879100E13D17 /* Build configuration list for PBXProject "Redline" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				58D674B82FD1879400E13D17 /* Debug */,
@@ -615,7 +617,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		58D674BA2FD1879400E13D17 /* Build configuration list for PBXNativeTarget "LiveF1" */ = {
+		58D674BA2FD1879400E13D17 /* Build configuration list for PBXNativeTarget "Redline" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				58D674BB2FD1879400E13D17 /* Debug */,

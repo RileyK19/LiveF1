@@ -232,7 +232,7 @@ struct HomeView: View {
                     // Header
                     VStack(spacing: 4) {
                         if (next == nil) {
-                            Text("LiveF1")
+                            Text("Redline")
                                 .font(.system(size: 32, weight: .black, design: .serif))
                             Text(Date().formatted(.dateTime.weekday(.wide).month(.wide).day()).uppercased())
                                 .font(.system(size: 11, weight: .semibold))
@@ -358,7 +358,7 @@ struct HomeView: View {
                     .buttonStyle(.plain)
                     .padding(.horizontal, 20)
 
-                    Text("LiveF1 · Race Control")
+                    Text("Redline · Race Control")
                         .font(.system(size: 11))
                         .foregroundStyle(.tertiary)
                         .padding(.bottom, 32)
