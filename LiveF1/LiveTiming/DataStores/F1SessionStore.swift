@@ -13,7 +13,8 @@ import Speech
 import WhisperKit
 
 @MainActor
-class F1SessionStore: ObservableObject {
+class F1SessionStore: ObservableObject, Hashable {
+    public var id: UUID = UUID()
     @Published var rawTopics: [String: Any] = [:]   // raw merged state per topic, for debug view
     @Published var messages: [(topic: String, payload: [String: Any])] = []  // last N messages
     @Published var connectionState: DataSourceState = .disconnected
@@ -39,6 +40,14 @@ class F1SessionStore: ObservableObject {
     private var flushTask: Task<Void, Never>?
     
     private var whisperPipe: WhisperKit?
+    
+    static func == (lhs: F1SessionStore, rhs: F1SessionStore) -> Bool {
+        return lhs.id == rhs.id
+    }
+    
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+    }
     
     var dataSource: (any F1DataSource)? {
         didSet {

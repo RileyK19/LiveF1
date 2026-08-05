@@ -9,7 +9,8 @@ import Foundation
 import Combine
 
 @MainActor
-final class ChampionshipDataStore: ObservableObject {
+final class ChampionshipDataStore: Observable, ObservableObject, Equatable, Hashable {
+    public var id: UUID
 
     // MARK: - Published State
 
@@ -42,9 +43,19 @@ final class ChampionshipDataStore: ObservableObject {
     // MARK: - Init
 
     init() {
+        id = UUID()
         loadFromCache()
     }
-
+    
+    
+    static func == (lhs: ChampionshipDataStore, rhs: ChampionshipDataStore) -> Bool {
+        return lhs.id == rhs.id
+    }
+    
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+    }
+    
     // MARK: - Public API
 
     func refresh() async {

@@ -17,7 +17,7 @@ struct FIADocumentsView: View {
     @StateObject private var store = FIADocumentStore()
 
     var body: some View {
-        NavigationStack {
+//        NavigationStack {
             Group {
                 switch store.loadState {
                 case .idle:
@@ -37,7 +37,7 @@ struct FIADocumentsView: View {
             .navigationBarTitleDisplayMode(.large)
             .toolbar { toolbarContent }
             .searchable(text: $store.searchText, prompt: "Search documents")
-        }
+//        }
         .onAppear { if store.documents.isEmpty { store.load() } }
     }
 
@@ -71,7 +71,8 @@ struct FIADocumentsView: View {
                 ForEach(store.filteredDocuments.sorted(by: { doc1, doc2 in
                     doc1.title.localizedStandardCompare(doc2.title) == .orderedDescending
                 })) { document in
-                    NavigationLink(destination: FIADocumentDetailView(document: document)) {
+//                    NavigationLink(destination: FIADocumentDetailView(document: document)) {
+                    NavigationLink(value: Destination.fiaDoc(document)) {
                         DocumentRowView(document: document)
                     }
                     .buttonStyle(.plain)
@@ -392,7 +393,7 @@ private struct SummarySheet: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        NavigationStack {
+//        NavigationStack {
             ScrollView {
                 Group {
                     if isLoading {
@@ -437,7 +438,7 @@ private struct SummarySheet: View {
                     Button("Done") { dismiss() }
                 }
             }
-        }
+//        }
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
     }
