@@ -89,6 +89,7 @@
 				F1DBTrackSVGs/imola.svg,
 				F1DBTrackSVGs/istanbul.svg,
 				F1DBTrackSVGs/jeddah.svg,
+				"F1DBTrackSVGs/kuala-lumpur.svg",
 				"F1DBTrackSVGs/las-vegas.svg",
 				F1DBTrackSVGs/lusail.svg,
 				F1DBTrackSVGs/madrid.svg,
@@ -523,7 +524,7 @@
 				CODE_SIGN_ENTITLEMENTS = LiveF1/LiveF1.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 8;
+				CURRENT_PROJECT_VERSION = 9;
 				DEVELOPMENT_TEAM = TMN6MFG35F;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -564,7 +565,7 @@
 				CODE_SIGN_ENTITLEMENTS = LiveF1/LiveF1.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 8;
+				CURRENT_PROJECT_VERSION = 9;
 				DEVELOPMENT_TEAM = TMN6MFG35F;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;

@@ -33,6 +33,7 @@ enum TrackColors {
         "montreal":    [Color(hex: "FF0000"), Color(hex: "FFFFFF")], // Canada
         "monza":       [Color(hex: "008C45"), Color(hex: "FFFFFF"), Color(hex: "CD212A")], // Italy
         "são-paulo":   [Color(hex: "009C3B"), Color(hex: "FFDF00"), Color(hex: "002776")], // Brazil
+        "sepang": [Color(hex: "010066"), Color(hex: "CC0001"), Color(hex: "FFCC00"), Color(hex: "FFFFFF")], // Malaysia
         "shanghai":    [Color(hex: "DE2910"), Color(hex: "FFDE00")], // China
         "silverstone": [Color(hex: "C8102E"), Color(hex: "FFFFFF"), Color(hex: "012169")], // UK
         "spa":         [Color(hex: "000000"), Color(hex: "FDDA24"), Color(hex: "EF3340")], // Belgium

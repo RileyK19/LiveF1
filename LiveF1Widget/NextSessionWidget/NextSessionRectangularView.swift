@@ -19,20 +19,23 @@ struct NextSessionRectangularView: View {
 
     var body: some View {
         if let race = entry.race {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("\(race.flagEmoji) \(race.raceName.replacingOccurrences(of: "Grand Prix", with: "GP"))")
-                    .font(.system(size: 13, weight: .bold))
-                    .lineLimit(1)
-                    .widgetAccentable()
-
-                HStack(spacing: 8) {
-                    ForEach(keySessions(for: race), id: \.name) { s in
-                        VStack(spacing: 0) {
-                            Text(s.short)
-                                .font(.system(size: 13, weight: .bold))
-                                .widgetAccentable()
-                            Text(s.time)
-                                .font(.system(size: 10, weight: .medium))
+            HStack {
+                ChampionshipTrackView(trackName: race.circuit.location.locality, width: 35, height: 35, primary: .black, secondary: .accentColor)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("\(race.flagEmoji) \(race.raceName.replacingOccurrences(of: "Grand Prix", with: "GP"))")
+                        .font(.system(size: 11, weight: .bold))
+                        .lineLimit(1)
+                        .widgetAccentable()
+                    
+                    HStack(spacing: 8) {
+                        ForEach(keySessions(for: race), id: \.name) { s in
+                            VStack(spacing: 0) {
+                                Text(s.short)
+                                    .font(.system(size: 9, weight: .bold))
+                                    .widgetAccentable()
+                                Text(s.time)
+                                    .font(.system(size: 7, weight: .medium))
+                            }
                         }
                     }
                 }

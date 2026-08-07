@@ -7,6 +7,7 @@
 
 import SwiftUI
 import PocketSVG
+import WidgetKit
 
 struct ChampionshipTrackView: View {
     var trackName: String
@@ -16,21 +17,24 @@ struct ChampionshipTrackView: View {
     var height: CGFloat = 35
     var primary: Color = Color.black
     var secondary: Color? = nil
+    
+    @Environment(\.widgetRenderingMode) private var renderingMode
 
     var body: some View {
         VStack {
 
             if let path = path {
                 ZStack {
-                    if let secondary = secondary {
+                    if let secondary = secondary, renderingMode == .fullColor {
                         ChampionshipTrackShape(cgPath: path)
                             .stroke(secondary, lineWidth: 4)
                             .frame(width: width, height: height)
                     }
-                    
+
                     ChampionshipTrackShape(cgPath: path)
-                        .stroke(primary, lineWidth: 2)
+                        .stroke(renderingMode == .fullColor ? primary : .primary, lineWidth: 2)
                         .frame(width: width, height: height)
+                        .widgetAccentable()
                 }
             }
         }

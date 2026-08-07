@@ -33,20 +33,15 @@ final class SessionNotificationManager {
             if existingIDs.contains(identifier) { continue }
 
             let fireDate = sessionDate.addingTimeInterval(-15 * 60)
-            guard fireDate > Date() else { continue } // don't schedule in the past
+            let interval = fireDate.timeIntervalSinceNow
+            guard interval > 0 else { continue } // don't schedule in the past
 
             let content = UNMutableNotificationContent()
             content.title = race.raceName
             content.body = "\(name) starts in 15 minutes"
             content.sound = .default
 
-            var calendar = Calendar.current
-            calendar.timeZone = TimeZone(identifier: "UTC")!
-            let comps = calendar.dateComponents(
-                [.year, .month, .day, .hour, .minute],
-                from: fireDate
-            )
-            let trigger = UNCalendarNotificationTrigger(dateMatching: comps, repeats: false)
+            let trigger = UNTimeIntervalNotificationTrigger(timeInterval: interval, repeats: false)
             let request = UNNotificationRequest(identifier: identifier, content: content, trigger: trigger)
 
             try? await center.add(request)

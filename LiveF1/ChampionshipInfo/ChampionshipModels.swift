@@ -83,18 +83,39 @@ struct ChampionshipRace: Codable, Identifiable, Hashable {
 
     var flagEmoji: String {
         let flags: [String: String] = [
-            "Australia": "🇦🇺", "Bahrain": "🇧🇭", "Saudi Arabia": "🇸🇦",
-            "Japan": "🇯🇵", "China": "🇨🇳", "Miami": "🇺🇸", "United States": "🇺🇸",
-            "Italy": "🇮🇹", "Monaco": "🇲🇨", "Canada": "🇨🇦", "Spain": "🇪🇸",
-            "Austria": "🇦🇹", "Great Britain": "🇬🇧", "Hungary": "🇭🇺",
-            "Belgium": "🇧🇪", "Netherlands": "🇳🇱", "Singapore": "🇸🇬",
-            "Mexico": "🇲🇽", "Brazil": "🇧🇷", "Las Vegas": "🇺🇸",
-            "Qatar": "🇶🇦", "Abu Dhabi": "🇦🇪", "Azerbaijan": "🇦🇿"
+            "abu-dhabi":   "🇦🇪",
+            "austin":      "🇺🇸",
+            "bahrain":     "🇧🇭",
+            "baku":        "🇦🇿",
+            "barcelona":   "🇪🇸",
+            "budapest":    "🇭🇺",
+            "imola":       "🇮🇹",
+            "istanbul":    "🇹🇷",
+            "jeddah":      "🇸🇦",
+            "las-vegas":   "🇺🇸",
+            "lusail":      "🇶🇦",
+            "madrid":      "🇪🇸",
+            "marina-bay":  "🇸🇬",
+            "melbourne":   "🇦🇺",
+            "mexico-city": "🇲🇽",
+            "miami":       "🇺🇸",
+            "monte-carlo": "🇲🇨",
+            "montreal":    "🇨🇦",
+            "monza":       "🇮🇹",
+            "são-paulo":   "🇧🇷",
+            "kuala-lumpur":"🇲🇾",
+            "shanghai":    "🇨🇳",
+            "silverstone": "🇬🇧",
+            "spa":         "🇧🇪",
+            "spielberg":   "🇦🇹",
+            "suzuka":      "🇯🇵",
+            "zandvoort":   "🇳🇱"
         ]
-        for (key, flag) in flags {
-            if raceName.contains(key) { return flag }
-        }
-        return "🏁"
+//        for (key, flag) in flags {
+//            if raceName.contains(key) { return flag }
+//        }
+//        print(circuit.location.locality)
+        return flags[circuit.location.locality.replacingOccurrences(of: " ", with: "-").lowercased()] ?? "🏁"
     }
     
     var allSessions: [(name: String, session: ChampionshipSession)] {
