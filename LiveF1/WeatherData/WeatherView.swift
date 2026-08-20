@@ -57,13 +57,28 @@ struct WeatherView: View {
             } header: {
                 Text(targetRace?.raceName ?? "Weather")
             } footer: {
-                Text("Hourly forecasts are only available within about 10 days of the session.")
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Hourly forecasts are only available within about 10 days of the session.")
+
+                    if let markURL = viewModel.attributionMarkURL,
+                       let legalURL = viewModel.attributionLegalURL {
+                        Link(destination: legalURL) {
+                            AsyncImage(url: markURL) { image in
+                                image.resizable().scaledToFit()
+                            } placeholder: {
+                                EmptyView()
+                            }
+                            .frame(height: 20)
+                        }
+                    }
+                }
             }
         }
         .navigationTitle("Weather")
         .task(id: targetRace?.round) {
             guard let targetRace else { return }
             await viewModel.loadWeather(for: targetRace)
+            await viewModel.loadAttribution()
         }
         .refreshable {
             guard let targetRace else { return }

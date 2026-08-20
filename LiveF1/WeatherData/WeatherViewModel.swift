@@ -17,6 +17,11 @@ final class WeatherViewModel: ObservableObject {
     @Published var sessionWeathers: [SessionWeather] = []
     @Published var isLoading = false
     @Published var errorMessage: String?
+    
+    @Published var attributionMarkURL: URL?
+    @Published var attributionLegalURL: URL?
+    
+    @AppStorage("isDark") var isDark = true
 
     private let weatherService = WeatherService.shared
     private let geocoder = CLGeocoder()
@@ -107,6 +112,13 @@ final class WeatherViewModel: ObservableObject {
             geocoder.geocodeAddressString(query) { placemarks, _ in
                 continuation.resume(returning: placemarks?.first?.location)
             }
+        }
+    }
+    
+    func loadAttribution() async {
+        if let attribution = try? await WeatherService.shared.attribution {
+            attributionMarkURL = isDark ? attribution.combinedMarkDarkURL : attribution.combinedMarkLightURL
+            attributionLegalURL = attribution.legalPageURL
         }
     }
 }
