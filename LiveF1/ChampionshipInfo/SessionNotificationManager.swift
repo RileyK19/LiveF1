@@ -22,19 +22,18 @@ final class SessionNotificationManager {
     /// Schedules a 15-min-before notification for every session of `race`
     /// that isn't already scheduled and hasn't already passed.
     func scheduleNotifications(for race: ChampionshipRace) async {
-        let pending = await center.pendingNotificationRequests()
-        let existingIDs = Set(pending.map { $0.identifier })
-
         for (name, session) in race.allSessions {
             guard let sessionDate = session.dateTime else { continue }
 
-            // Stable ID per race+session — this is what prevents duplicates
             let identifier = "session-\(race.round)-\(name)"
-            if existingIDs.contains(identifier) { continue }
-
             let fireDate = sessionDate.addingTimeInterval(-15 * 60)
             let interval = fireDate.timeIntervalSinceNow
-            guard interval > 0 else { continue } // don't schedule in the past
+
+            guard interval > 0 else {
+//                print("⏭️ Skipping \(identifier) — fire time \(fireDate) already passed")
+                center.removePendingNotificationRequests(withIdentifiers: [identifier])
+                continue
+            }
 
             let content = UNMutableNotificationContent()
             content.title = race.raceName
@@ -45,6 +44,12 @@ final class SessionNotificationManager {
             let request = UNNotificationRequest(identifier: identifier, content: content, trigger: trigger)
 
             try? await center.add(request)
+
+            let df = DateFormatter()
+            df.dateStyle = .medium
+            df.timeStyle = .medium
+            df.timeZone = .current
+//            print("✅ Scheduled \(identifier) — session at \(df.string(from: sessionDate)) local, fires at \(df.string(from: fireDate)) local (in \(Int(interval))s)")
         }
     }
 }

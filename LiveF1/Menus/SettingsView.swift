@@ -37,6 +37,8 @@ struct SettingsView: View {
 //                    NavigationLink(value: Destination.debug(store)) {
                         Label("Debug", systemImage: "ladybug")
                     }
+                    
+                    DebugPrintToggle()
                 }
                 Section("Credits") {
                     NavigationLink {

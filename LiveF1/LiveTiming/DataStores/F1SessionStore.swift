@@ -25,6 +25,9 @@ class F1SessionStore: ObservableObject, Hashable {
     @Published var carPositions: [String: CarPosition] = [:]
     @Published var toastQueue: [ToastKind] = []
     @Published var currentToast: ToastKind?
+    
+    @Published private(set) var isDelayRampingUp: Bool = false
+    @Published private(set) var delayRampRemaining: TimeInterval = 0
 
     private var toastTimer: Task<Void, Never>?
     
@@ -393,6 +396,15 @@ class F1SessionStore: ObservableObject, Hashable {
     }
 
     private func flushDue() {
+        if delaySeconds > 0, let nextRelease = buffer.first?.releaseAt {
+            let gap = nextRelease.timeIntervalSince(Date())
+            isDelayRampingUp = gap > 1   // more than a normal flush tick's worth of nothing due
+            delayRampRemaining = max(0, gap)
+        } else {
+            isDelayRampingUp = false
+            delayRampRemaining = 0
+        }
+
         guard !buffer.isEmpty else { return }
         let now = Date()
         var i = 0

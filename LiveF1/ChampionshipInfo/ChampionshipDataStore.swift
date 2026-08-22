@@ -91,12 +91,24 @@ final class ChampionshipDataStore: Observable, ObservableObject, Equatable, Hash
         return "Soon"
     }
     
-    func scheduleNotificationsForNextRace() async {
-        guard let race = nextRace else { return }
+//    func scheduleNotificationsForNextRace() async {
+//        guard let race = nextRace else { return }
+//        await SessionNotificationManager.shared.requestAuthorizationIfNeeded()
+//        await SessionNotificationManager.shared.scheduleNotifications(for: race)
+//    }
+    func scheduleNotificationsForNextRace(count: Int = 3) async {
         await SessionNotificationManager.shared.requestAuthorizationIfNeeded()
-        await SessionNotificationManager.shared.scheduleNotifications(for: race)
-    }
 
+        let upcoming = races
+            .filter { !$0.isPast }
+            .sorted { ($0.raceDate ?? .distantFuture) < ($1.raceDate ?? .distantFuture) }
+            .prefix(count)
+
+        for race in upcoming {
+            await SessionNotificationManager.shared.scheduleNotifications(for: race)
+        }
+    }
+    
     // MARK: - Fetch Schedule
 
     private func fetchSchedule(forceRefresh: Bool) async {

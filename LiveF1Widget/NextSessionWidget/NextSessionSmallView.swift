@@ -100,7 +100,7 @@ struct NextSessionSmallView: View {
             let isNext = s.name == entry.sessionName
             let short = shortName(for: s.name)
 
-            let alwaysShow = (s.name.lowercased().contains("quali") && race.sprint == nil)
+            let alwaysShow = (s.name.lowercased().contains("quali") && (race.sprint == nil || ((entry.sessionName?.lowercased().contains("sprint")) != nil)))
                 || s.name.lowercased().contains("sprint")
                 || s.name.lowercased().contains("race")
 
