@@ -17,11 +17,14 @@ final class WeatherViewModel: ObservableObject {
     @Published var sessionWeathers: [SessionWeather] = []
     @Published var isLoading = false
     @Published var errorMessage: String?
+    @Published var minuteReadings: [MinuteWeather] = []
     
     @Published var attributionMarkURL: URL?
     @Published var attributionLegalURL: URL?
     
     @AppStorage("isDark") var isDark = true
+    
+    private var currentLocation: CLLocation?
 
     private let weatherService = WeatherService.shared
     private let geocoder = CLGeocoder()
@@ -50,6 +53,8 @@ final class WeatherViewModel: ObservableObject {
             errorMessage = "Couldn't locate this circuit."
             return
         }
+        
+        currentLocation = location
 
         do {
             let sessionDates = race.allSessions.compactMap { $0.session.dateTime }
@@ -96,7 +101,8 @@ final class WeatherViewModel: ObservableObject {
                         sessionDate: start,
                         temperature: Measurement(value: avgTempValue, unit: unit),
                         precipitationChance: maxPrecipChance,
-                        symbolName: representative.symbolName
+                        symbolName: representative.symbolName,
+                        hourlyReadings: hoursInWindow.sorted { $0.date < $1.date }
                     )
                 )
             }
@@ -119,6 +125,27 @@ final class WeatherViewModel: ObservableObject {
         if let attribution = try? await WeatherService.shared.attribution {
             attributionMarkURL = isDark ? attribution.combinedMarkDarkURL : attribution.combinedMarkLightURL
             attributionLegalURL = attribution.legalPageURL
+        }
+    }
+    
+    func isLiveIsh(_ sessionWeather: SessionWeather) -> Bool {
+        let start = sessionWeather.sessionDate
+        let end = start.addingTimeInterval(duration(for: sessionWeather.sessionName))
+        let now = Date()
+        return now >= start.addingTimeInterval(-15 * 60) && now <= end
+    }
+    
+    func loadMinuteForecast() async {
+        guard let location = currentLocation else { return }
+        do {
+            // .minute returns an OPTIONAL forecast — nil where nowcasting isn't supported
+            if let forecast = try await weatherService.weather(for: location, including: .minute) {
+                minuteReadings = forecast.forecast
+            } else {
+                minuteReadings = []
+            }
+        } catch {
+            minuteReadings = []
         }
     }
 }

@@ -31,4 +31,5 @@ struct SessionWeather: Identifiable {
     let temperature: Measurement<UnitTemperature>?
     let precipitationChance: Double?   // 0.0 - 1.0
     let symbolName: String?
+    let hourlyReadings: [HourWeather] 
 }

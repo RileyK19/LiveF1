@@ -39,7 +39,7 @@ class F1SessionStore: ObservableObject, Hashable {
     private var isTranscribing = false
     
     var delaySeconds: TimeInterval = 0
-    private var buffer: [(releaseAt: Date, topic: String, payload: [String: Any])] = []
+    private var buffer: [(enqueuedAt: Date, topic: String, payload: [String: Any])] = []
     private var flushTask: Task<Void, Never>?
     
     private var whisperPipe: WhisperKit?
@@ -392,13 +392,14 @@ class F1SessionStore: ObservableObject, Hashable {
             handle(topic: topic, payload: payload)
             return
         }
-        buffer.append((Date().addingTimeInterval(delaySeconds), topic, payload))
+        buffer.append((Date(), topic, payload))
     }
 
     private func flushDue() {
-        if delaySeconds > 0, let nextRelease = buffer.first?.releaseAt {
-            let gap = nextRelease.timeIntervalSince(Date())
-            isDelayRampingUp = gap > 1   // more than a normal flush tick's worth of nothing due
+        if delaySeconds > 0, let next = buffer.first {
+            let releaseAt = next.enqueuedAt.addingTimeInterval(delaySeconds)
+            let gap = releaseAt.timeIntervalSince(Date())
+            isDelayRampingUp = gap > 1
             delayRampRemaining = max(0, gap)
         } else {
             isDelayRampingUp = false
@@ -408,7 +409,7 @@ class F1SessionStore: ObservableObject, Hashable {
         guard !buffer.isEmpty else { return }
         let now = Date()
         var i = 0
-        while i < buffer.count, buffer[i].releaseAt <= now {
+        while i < buffer.count, buffer[i].enqueuedAt.addingTimeInterval(delaySeconds) <= now {
             i += 1
         }
         guard i > 0 else { return }

@@ -41,7 +41,7 @@ struct WeatherView: View {
                             .foregroundStyle(.secondary)
                     } else {
                         ForEach(viewModel.sessionWeathers) { sw in
-                            SessionWeatherRow(sessionWeather: sw)
+                            SessionWeatherRow(sessionWeather: sw, viewModel: viewModel)
                         }
                     }
                 } else if championshipStore.isLoadingSchedule {
@@ -89,60 +89,6 @@ struct WeatherView: View {
                 await championshipStore.refresh()
             }
         }
-    }
-}
-
-private struct SessionWeatherRow: View {
-    let sessionWeather: SessionWeather
-
-    private var timeString: String {
-        let f = DateFormatter()
-        f.dateFormat = "EEE MMM d · HH:mm"
-        f.timeZone = .current
-        return f.string(from: sessionWeather.sessionDate)
-    }
-
-    var body: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(sessionWeather.sessionName)
-                    .font(.headline)
-                Text(timeString)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            }
-
-            Spacer()
-
-            if let symbolName = sessionWeather.symbolName {
-                Image(systemName: symbolName)
-                    .font(.title2)
-                    .symbolRenderingMode(.multicolor)
-            }
-
-            VStack(alignment: .trailing, spacing: 4) {
-                if let temp = sessionWeather.temperature {
-                    Text(temp.formatted(
-                        .measurement(
-                            width: .narrow,
-                            usage: .weather,
-                            numberFormatStyle: .number.precision(.fractionLength(2))
-                        )))
-                        .font(.headline)
-                    if let chance = sessionWeather.precipitationChance {
-                        Label("\(Int(chance * 100))%", systemImage: "drop.fill")
-                            .font(.subheadline)
-                            .foregroundStyle(.blue)
-                    }
-                }
-                else {
-                    Text("Not available yet")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
-            }
-        }
-        .padding(.vertical, 4)
     }
 }
 
