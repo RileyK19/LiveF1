@@ -20,7 +20,15 @@ struct WeatherView: View {
     @StateObject private var viewModel = WeatherViewModel()
 
     private var targetRace: ChampionshipRace? {
-        race ?? championshipStore.nextRace
+        if let mostRecentPast = championshipStore.races
+            .filter({ $0.isPast })
+            .sorted(by: { ($0.raceDate ?? .distantPast) < ($1.raceDate ?? .distantPast) })
+            .last,
+           let date = mostRecentPast.raceDate,
+           Calendar.current.isDateInToday(date) {
+            return mostRecentPast
+        }
+        return race ?? championshipStore.nextRace
     }
 
     var body: some View {

@@ -58,18 +58,45 @@ final class WeatherViewModel: ObservableObject {
 
         do {
             let sessionDates = race.allSessions.compactMap { $0.session.dateTime }
-            let latestSessionEnd = sessionDates.max()?.addingTimeInterval(2 * 3600) ?? Date().addingTimeInterval(10 * 86400)
+            guard let earliestStart = sessionDates.min(), let latestStart = sessionDates.max() else {
+                errorMessage = "No session times available."
+                return
+            }
 
-            let hourly = try await weatherService.weather(
-                for: location,
-                including: .hourly(startDate: Date(), endDate: latestSessionEnd)
+            let now = Date()
+            let latestSessionEnd = min(latestStart.addingTimeInterval(2 * 3600), now.addingTimeInterval(10 * 86400))
 
-            )
-            var results: [SessionWeather] = []
-            
+            var hourly: [HourWeather] = []
+
+            // Past portion of the weekend — only fetch if some sessions are already behind us
+            if earliestStart < now {
+                let historicalEnd = min(now, latestSessionEnd)
+                let pastHourly = try await weatherService.weather(
+                    for: location,
+                    including: .hourly(startDate: earliestStart, endDate: historicalEnd)
+                )
+                hourly.append(contentsOf: pastHourly)
+            }
+
+            // Future portion — only fetch if some sessions haven't happened yet
+            if latestSessionEnd > now {
+                let forecastStart = max(now, earliestStart)
+                let futureHourly = try await weatherService.weather(
+                    for: location,
+                    including: .hourly(startDate: forecastStart, endDate: latestSessionEnd)
+                )
+                hourly.append(contentsOf: futureHourly)
+            }
+
+            guard !hourly.isEmpty else {
+                errorMessage = "Weather unavailable for this weekend."
+                return
+            }
+
             print("Hourly forecast entries: \(hourly.count)")
             print("Hourly forecast range: \(hourly.first?.date.description ?? "nil") to \(hourly.last?.date.description ?? "nil")")
 
+            var results: [SessionWeather] = []
 
             for (name, session) in race.allSessions {
                 guard let start = session.dateTime else { continue }

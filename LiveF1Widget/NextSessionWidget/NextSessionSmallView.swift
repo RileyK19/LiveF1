@@ -10,6 +10,7 @@ import WidgetKit
 
 struct NextSessionSmallView: View {
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.widgetRenderingMode) var renderingMode
 
     let entry: NextSessionEntry
     
@@ -48,7 +49,7 @@ struct NextSessionSmallView: View {
                                     .foregroundStyle(isNext ? .white : .secondary)
                                     .padding(.horizontal, 6)
                                     .padding(.vertical, 2)
-                                    .background(isNext ? Color.red : Color.secondary.opacity(0.15), in: Capsule())
+                                    .background(isNext && renderingMode != .accented ? Color.red : Color.secondary.opacity(0.15), in: Capsule())
                                 Text(s.time)
                                     .font(.system(size: 10, weight: .medium))
                                     .foregroundStyle(.secondary)

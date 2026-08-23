@@ -224,6 +224,10 @@ struct HomeView: View {
             .first
     }
     
+    private var mostRecent: (race: ChampionshipRace, name: String, session: ChampionshipSession)? {
+        championshipStore.mostRecentSession
+    }
+    
     var body: some View {
 //        NavigationStack {
             ScrollView {
@@ -231,17 +235,24 @@ struct HomeView: View {
 
                     // Header
                     VStack(spacing: 4) {
-                        if (next == nil) {
-                            Text("Redline")
+                        if hasLiveSession, let mostRecent {
+                            Text("Live: \(mostRecent.race.circuit.location.locality) \(mostRecent.name)")
                                 .font(.system(size: 32, weight: .black, design: .serif))
                             Text(Date().formatted(.dateTime.weekday(.wide).month(.wide).day()).uppercased())
                                 .font(.system(size: 11, weight: .semibold))
                                 .foregroundStyle(.secondary)
                                 .tracking(1.5)
-                        } else {
+                        } else if next != nil {
                             Text("Next: \(next!.circuit.location.locality)")
                                 .font(.system(size: 32, weight: .black, design: .serif))
                             Text(next!.raceDate!.formatted(.dateTime.weekday(.wide).month(.wide).day()).uppercased())
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundStyle(.secondary)
+                                .tracking(1.5)
+                        } else {
+                            Text("Redline")
+                                .font(.system(size: 32, weight: .black, design: .serif))
+                            Text(Date().formatted(.dateTime.weekday(.wide).month(.wide).day()).uppercased())
                                 .font(.system(size: 11, weight: .semibold))
                                 .foregroundStyle(.secondary)
                                 .tracking(1.5)

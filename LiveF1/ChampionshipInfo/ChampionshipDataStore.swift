@@ -26,6 +26,16 @@ final class ChampionshipDataStore: Observable, ObservableObject, Equatable, Hash
     @Published var isLoadingLaps = false
     @Published var standingsHistory: [ChampionshipStandingsHistoryEntry] = []
 
+    var mostRecentSession: (race: ChampionshipRace, name: String, session: ChampionshipSession)? {
+        races
+            .flatMap { race in
+                race.allSessions.map { (race: race, name: $0.name, session: $0.session) }
+            }
+            .filter { $0.session.isPast }
+            .sorted { ($0.session.dateTime ?? .distantPast) > ($1.session.dateTime ?? .distantPast) }
+            .first
+    }
+    
     // MARK: - Private
 
     private let base = "https://api.jolpi.ca/ergast/f1"
@@ -187,8 +197,12 @@ final class ChampionshipDataStore: Observable, ObservableObject, Equatable, Hash
             return
         }
 
+        guard let url = URL(string: "\(base)/\(season)/\(round)/results.json") else {
+            self.error = "Race results: invalid URL for round \(round)"
+            return
+        }
+
         do {
-            let url = URL(string: "\(base)/\(season)/\(round)/results.json")!
             let (data, _) = try await URLSession.shared.data(from: url)
 
             let json = try JSONSerialization.jsonObject(with: data) as? [String: Any]
@@ -229,7 +243,10 @@ final class ChampionshipDataStore: Observable, ObservableObject, Equatable, Hash
 
         do {
             while true {
-                let url = URL(string: "\(base)/\(season)/\(round)/laps.json?limit=\(limit)&offset=\(offset)")!
+                guard let url = URL(string: "\(base)/\(season)/\(round)/laps.json?limit=\(limit)&offset=\(offset)") else {
+                    self.error = "Lap positions: invalid URL for round \(round)"
+                    break
+                }
                 let (data, _) = try await URLSession.shared.data(from: url)
                 let decoded = try JSONDecoder().decode(ChampionshipLapsResponse.self, from: data)
 
@@ -273,8 +290,9 @@ final class ChampionshipDataStore: Observable, ObservableObject, Equatable, Hash
         await withTaskGroup(of: ChampionshipStandingsHistoryEntry?.self) { group in
             for round in completedRounds {
                 group.addTask {
-                    let url = URL(string: "\(self.base)/\(self.season)/\(round)/driverStandings.json")!
-                    guard let (data, _) = try? await URLSession.shared.data(from: url),
+                    
+                    guard let url = URL(string: "\(self.base)/\(self.season)/\(round)/driverStandings.json"),
+                          let (data, _) = try? await URLSession.shared.data(from: url),
                           let decoded = try? JSONDecoder().decode(ChampionshipStandingsResponse.self, from: data),
                           let standings = decoded.mrData.standingsTable.standingsLists.first?.driverStandings
                     else { return nil }
