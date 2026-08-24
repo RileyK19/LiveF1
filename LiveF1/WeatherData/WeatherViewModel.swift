@@ -19,8 +19,8 @@ final class WeatherViewModel: ObservableObject {
     @Published var errorMessage: String?
     @Published var minuteReadings: [MinuteWeather] = []
     
-    @Published var attributionMarkURL: URL?
-    @Published var attributionLegalURL: URL?
+    @Published var attribution: WeatherAttribution?
+
     
     @AppStorage("isDark") var isDark = true
     
@@ -28,6 +28,9 @@ final class WeatherViewModel: ObservableObject {
 
     private let weatherService = WeatherService.shared
     private let geocoder = CLGeocoder()
+    
+    private var geocodeCache: [String: CLLocation] = [:]
+
 
     /// The schedule API doesn't return session length, so we assume typical durations
     /// to define each session's end time / window.
@@ -49,7 +52,21 @@ final class WeatherViewModel: ObservableObject {
         defer { isLoading = false }
 
         let query = "\(race.circuit.circuitName), \(race.circuit.location.locality), \(race.circuit.location.country)"
-        guard let location = await geocode(query) else {
+        let query2 = "\(race.circuit.location.locality), \(race.circuit.location.country)"
+        let query3 = "\(race.circuit.circuitName)"
+        print(query)
+        
+        var location: CLLocation? = nil
+        
+        location = await geocode(query)
+        if location == nil {
+            location = await geocode(query2)
+        }
+        if location == nil {
+            location = await geocode(query3)
+        }
+
+        guard let location else {
             errorMessage = "Couldn't locate this circuit."
             return
         }
@@ -64,7 +81,7 @@ final class WeatherViewModel: ObservableObject {
             }
 
             let now = Date()
-            let latestSessionEnd = min(latestStart.addingTimeInterval(2 * 3600), now.addingTimeInterval(10 * 86400))
+            let latestSessionEnd = latestStart.addingTimeInterval(2 * 3600)
 
             var hourly: [HourWeather] = []
 
@@ -141,18 +158,25 @@ final class WeatherViewModel: ObservableObject {
     }
 
     private func geocode(_ query: String) async -> CLLocation? {
-        await withCheckedContinuation { continuation in
-            geocoder.geocodeAddressString(query) { placemarks, _ in
+        if let cached = geocodeCache[query] { return cached }
+
+        let location: CLLocation? = await withCheckedContinuation { continuation in
+            geocoder.geocodeAddressString(query) { placemarks, error in
+                if let error {
+                    print("Geocode error for '\(query)': \(error)")
+                }
                 continuation.resume(returning: placemarks?.first?.location)
             }
         }
+
+        if let location {
+            geocodeCache[query] = location
+        }
+        return location
     }
     
     func loadAttribution() async {
-        if let attribution = try? await WeatherService.shared.attribution {
-            attributionMarkURL = isDark ? attribution.combinedMarkDarkURL : attribution.combinedMarkLightURL
-            attributionLegalURL = attribution.legalPageURL
-        }
+        attribution = try? await WeatherService.shared.attribution
     }
     
     func isLiveIsh(_ sessionWeather: SessionWeather) -> Bool {

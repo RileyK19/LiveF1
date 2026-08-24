@@ -18,6 +18,7 @@ struct WeatherView: View {
 
     @EnvironmentObject private var championshipStore: ChampionshipDataStore
     @StateObject private var viewModel = WeatherViewModel()
+    @Environment(\.colorScheme) private var colorScheme
 
     private var targetRace: ChampionshipRace? {
         if let mostRecentPast = championshipStore.races
@@ -68,9 +69,10 @@ struct WeatherView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Hourly forecasts are only available within about 10 days of the session.")
 
-                    if let markURL = viewModel.attributionMarkURL,
-                       let legalURL = viewModel.attributionLegalURL {
-                        Link(destination: legalURL) {
+
+                    if let attribution = viewModel.attribution {
+                        let markURL = colorScheme == .dark ? attribution.combinedMarkDarkURL : attribution.combinedMarkLightURL
+                        Link(destination: attribution.legalPageURL) {
                             AsyncImage(url: markURL) { image in
                                 image.resizable().scaledToFit()
                             } placeholder: {
@@ -84,6 +86,7 @@ struct WeatherView: View {
         }
         .navigationTitle("Weather")
         .task(id: targetRace?.round) {
+            await championshipStore.refresh()
             guard let targetRace else { return }
             await viewModel.loadWeather(for: targetRace)
             await viewModel.loadAttribution()
@@ -92,11 +95,11 @@ struct WeatherView: View {
             guard let targetRace else { return }
             await viewModel.loadWeather(for: targetRace)
         }
-        .onAppear {
-            Task {
-                await championshipStore.refresh()
-            }
-        }
+//        .onAppear {
+//            Task {
+//                await championshipStore.refresh()
+//            }
+//        }
     }
 }
 
