@@ -28,6 +28,8 @@ class F1SessionStore: ObservableObject, Hashable {
     
     @Published private(set) var isDelayRampingUp: Bool = false
     @Published private(set) var delayRampRemaining: TimeInterval = 0
+    
+    @Published var trackMapVM: TrackMapViewModel = TrackMapViewModel()
 
     private var toastTimer: Task<Void, Never>?
     
@@ -62,6 +64,12 @@ class F1SessionStore: ObservableObject, Hashable {
             dataSource?.onStateChange = { [weak self] state in
                 Task { @MainActor in
                     self?.connectionState = state
+                    if case .connected = state {
+                        let sessionName = (self?.rawTopics["SessionInfo"] as? [String: Any])?["Name"] as? String ?? "Session"
+                        LiveActivityManager.shared.start(sessionName: sessionName)
+                    } else if case .disconnected = state {
+                        LiveActivityManager.shared.end()
+                    }
                 }
             }
         }
@@ -145,6 +153,14 @@ class F1SessionStore: ObservableObject, Hashable {
             messages.removeFirst(messages.count - maxMessages)
         }
         drivers = F1TimingParser.parse(store: self)
+        
+        let trackStatus = (rawTopics["TrackStatus"] as? [String: Any])?["Message"] as? String ?? ""
+        let lapCount: String = {
+            guard let lc = rawTopics["LapCount"] as? [String: Any],
+                  let current = lc["CurrentLap"] else { return "" }
+            return "\(current)"
+        }()
+        LiveActivityManager.shared.update(from: drivers, trackStatus: trackStatus, lapCount: lapCount)
         
         if topic == "CarData.z", let entries = payload["Entries"] as? [[String: Any]] {
             if let last = entries.last, let cars = last["Cars"] as? [String: Any] {

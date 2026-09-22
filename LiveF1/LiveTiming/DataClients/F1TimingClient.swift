@@ -8,12 +8,17 @@
 
 import Foundation
 import Compression
+import Combine
 
-class F1TimingClient: NSObject, F1DataSource {
+final class WebsocketConnection {
+    static var webSocketTask: URLSessionWebSocketTask?
+}
+
+class F1TimingClient: NSObject, F1DataSource, ObservableObject {
     var onMessage: ((String, [String: Any]) -> Void)?
     var onStateChange: ((DataSourceState) -> Void)?
 
-    private var webSocketTask: URLSessionWebSocketTask?
+//    private var webSocketTask: URLSessionWebSocketTask?
     private var urlSession: URLSession!
     private(set) var currentToken: String?
     
@@ -48,7 +53,8 @@ class F1TimingClient: NSObject, F1DataSource {
             
             await MainActor.run {
                 pingTimer = Timer.scheduledTimer(withTimeInterval: 10, repeats: true) { [weak self] _ in
-                    self?.webSocketTask?.sendPing { error in
+//                    self?.webSocketTask?.sendPing { error in
+                    WebsocketConnection.webSocketTask?.sendPing { error in
                         if let error {
                             print("❌ ping failed: \(error)")
                         } else {
@@ -65,7 +71,7 @@ class F1TimingClient: NSObject, F1DataSource {
     func disconnect() {
         pingTimer?.invalidate()
         pingTimer = nil
-        webSocketTask?.cancel(with: .normalClosure, reason: nil)
+        WebsocketConnection.webSocketTask?.cancel(with: .normalClosure, reason: nil)
         onStateChange?(.disconnected)
     }
 
@@ -89,26 +95,26 @@ class F1TimingClient: NSObject, F1DataSource {
             req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
         req.setValue("https://livetiming.formula1.com", forHTTPHeaderField: "Origin")
-        webSocketTask = urlSession.webSocketTask(with: req)
+        WebsocketConnection.webSocketTask = urlSession.webSocketTask(with: req)
         print("🔌 ws resume")
-        webSocketTask?.resume()
+        WebsocketConnection.webSocketTask?.resume()
         print("🔌 ws resumed")
         try await Task.sleep(nanoseconds: 500_000_000)
         print("🔌 ws after sleep")
     }
     
     private func sendHandshake() async throws {
-        try await webSocketTask?.send(.string(#"{"protocol":"json","version":1}"# + "\u{1e}"))
+        try await WebsocketConnection.webSocketTask?.send(.string(#"{"protocol":"json","version":1}"# + "\u{1e}"))
     }
 
     private func subscribe() async throws {
         let msg: [String: Any] = ["type": 1, "invocationId": "0", "target": "Subscribe", "arguments": [topics]]
         let text = String(data: try JSONSerialization.data(withJSONObject: msg), encoding: .utf8)! + "\u{1e}"
-        try await webSocketTask?.send(.string(text))
+        try await WebsocketConnection.webSocketTask?.send(.string(text))
     }
 
     private func receiveLoop() {
-        webSocketTask?.receive { [weak self] result in
+        WebsocketConnection.webSocketTask?.receive { [weak self] result in
             switch result {
             case .success(let msg):
                 if case .string(let text) = msg { self?.processText(text) }
@@ -133,7 +139,7 @@ class F1TimingClient: NSObject, F1DataSource {
               let type = json["type"] as? Int else { return }
 
         if type == 6 {
-            webSocketTask?.send(.string(#"{"type":6}"# + "\u{1e}")) { _ in }
+            WebsocketConnection.webSocketTask?.send(.string(#"{"type":6}"# + "\u{1e}")) { _ in }
             return
         }
 

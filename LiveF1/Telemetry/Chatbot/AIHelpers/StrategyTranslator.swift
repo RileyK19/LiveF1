@@ -52,13 +52,14 @@ class StrategyTranslator: ObservableObject {
         }
 
         let tool = EvaluateStrategyTool(
+//            sessionStore: CurrentSessionStore(),
             context: context,
             median: median,
             trackModel: trackModel,
             annotatedLaps: annotatedLaps,
             onResult: { [weak self] args, result in
                 Task { @MainActor in
-                    self?.toolCallLog.append((args, result))
+                    self?.toolCallLog.append((args, result) as! (arguments: EvaluateStrategyArguments, result: EvaluateStrategyResult))
                     self?.lastEvaluation = result
                 }
             }

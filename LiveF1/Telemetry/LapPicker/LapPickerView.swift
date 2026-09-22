@@ -8,13 +8,38 @@
 import SwiftUI
 import Combine
 
+enum LapPickerDestination {
+    case speedTrace
+    case lapReplay
+
+    var icon: String {
+        switch self {
+        case .speedTrace: return "chart.line.uptrend.xyaxis"
+        case .lapReplay:  return "play.circle"
+        }
+    }
+
+    func label(count: Int) -> String {
+        switch self {
+        case .speedTrace:
+            return "Compare \(count) Lap\(count == 1 ? "" : "s")"
+        case .lapReplay:
+            return count == 1 ? "Watch Replay" : "Replay \(count) Laps"
+        }
+    }
+}
+
 struct LapPickerView: View {
     @StateObject private var viewModel: LapPickerViewModel
     let session: F1PredictorSession
+    let destination: LapPickerDestination
 
-    init(session: F1PredictorSession) {
+    init(session: F1PredictorSession, destination: LapPickerDestination, allowsMultipleSelection: Bool = true) {
         self.session = session
-        _viewModel = StateObject(wrappedValue: LapPickerViewModel(session: session))
+        self.destination = destination
+        _viewModel = StateObject(wrappedValue: LapPickerViewModel(
+            session: session, allowsMultipleSelection: allowsMultipleSelection
+        ))
     }
 
     var body: some View {
@@ -30,10 +55,9 @@ struct LapPickerView: View {
             } else {
                 ZStack {
                     VStack(spacing: 0) {
-                        
+
                         ScrollView(.horizontal, showsIndicators: false) {
                             HStack(spacing: 8) {
-                                
                                 ForEach(viewModel.drivers, id: \.self) { driver in
                                     Button {
                                         viewModel.selectedDriverNumber = driver
@@ -50,15 +74,8 @@ struct LapPickerView: View {
                                 }
                             }
                         }
-                        
-//                        Picker("Driver", selection: $viewModel.selectedDriverNumber) {
-//                            ForEach(viewModel.drivers, id: \.self) { driver in
-//                                Text("#\(driver)").tag(Optional(driver))
-//                            }
-//                        }
-//                        .pickerStyle(.menu)
                         .padding()
-                        
+
                         List(viewModel.lapsForSelectedDriver) { lap in
                             Button {
                                 viewModel.toggleSelection(lap)
@@ -78,13 +95,10 @@ struct LapPickerView: View {
                     if !viewModel.selectedLaps.isEmpty {
                         VStack {
                             Spacer()
-//                            NavigationLink {
-//                                SpeedTraceView(session: session, laps: viewModel.selectedLaps)
-//                            } label: {
-                            NavigationLink(value: Destination.speedTrace(session, viewModel.selectedLaps)) {
+                            NavigationLink(value: destinationValue) {
                                 HStack {
-                                    Image(systemName: "chart.line.uptrend.xyaxis")
-                                    Text("Compare \(viewModel.selectedLaps.count) Laps")
+                                    Image(systemName: destination.icon)
+                                    Text(destination.label(count: viewModel.selectedLaps.count))
                                         .fontWeight(.semibold)
                                         .padding(5)
                                 }
@@ -99,9 +113,17 @@ struct LapPickerView: View {
         .navigationTitle("Select Lap")
         .task { await viewModel.load() }
     }
-    
+
+    private var destinationValue: Destination {
+        switch destination {
+        case .speedTrace:
+            return .speedTrace(session, viewModel.selectedLaps)
+        case .lapReplay:
+            return .lapReplay(session, viewModel.selectedLaps)
+        }
+    }
+
     private func lapColor(lap: F1Lap) -> Color {
-        let minLap = viewModel.lapsForSelectedDriver.min(by: { $0.lapDuration ?? 0.0 < $1.lapDuration ?? 0.0})
         guard let minLap = viewModel.lapsForSelectedDriver
             .filter({ $0.lapDuration != nil })
             .min(by: { $0.lapDuration! < $1.lapDuration! }),

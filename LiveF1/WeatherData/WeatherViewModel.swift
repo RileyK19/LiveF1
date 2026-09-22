@@ -18,6 +18,7 @@ final class WeatherViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var errorMessage: String?
     @Published var minuteReadings: [MinuteWeather] = []
+    @Published var currentWeather: CurrentWeather?
     
     @Published var attribution: WeatherAttribution?
 
@@ -30,7 +31,18 @@ final class WeatherViewModel: ObservableObject {
     private let geocoder = CLGeocoder()
     
     private var geocodeCache: [String: CLLocation] = [:]
-
+    
+    var currentAsSessionWeather: SessionWeather? {
+        guard let current = currentWeather else { return nil }
+        return SessionWeather(
+            sessionName: "Now",
+            sessionDate: current.date,
+            temperature: current.temperature,
+            precipitationChance: nil, // CurrentWeather doesn't expose a chance, only intensity
+            symbolName: current.symbolName,
+            hourlyReadings: [] // empty on purpose — keeps the row non-expandable, no chevron
+        )
+    }
 
     /// The schedule API doesn't return session length, so we assume typical durations
     /// to define each session's end time / window.
@@ -154,6 +166,16 @@ final class WeatherViewModel: ObservableObject {
             sessionWeathers = results
         } catch {
             errorMessage = "Weather unavailable: \(error.localizedDescription)"
+        }
+    }
+    
+    func loadCurrentWeather() async {
+        guard let location = currentLocation else { return }
+        do {
+            currentWeather = try await weatherService.weather(for: location, including: .current)
+        } catch {
+            // Non-fatal — don't clobber errorMessage, which is for the session forecast
+            currentWeather = nil
         }
     }
 

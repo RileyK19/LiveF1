@@ -49,6 +49,9 @@ struct WeatherView: View {
                         Text("No session weather available yet.")
                             .foregroundStyle(.secondary)
                     } else {
+                        if let currentSW = viewModel.currentAsSessionWeather {
+                            SessionWeatherRow(sessionWeather: currentSW, viewModel: viewModel)
+                        }
                         ForEach(viewModel.sessionWeathers) { sw in
                             SessionWeatherRow(sessionWeather: sw, viewModel: viewModel)
                         }
@@ -89,11 +92,13 @@ struct WeatherView: View {
             await championshipStore.refresh()
             guard let targetRace else { return }
             await viewModel.loadWeather(for: targetRace)
+            await viewModel.loadCurrentWeather()
             await viewModel.loadAttribution()
         }
         .refreshable {
             guard let targetRace else { return }
             await viewModel.loadWeather(for: targetRace)
+            await viewModel.loadCurrentWeather()
         }
 //        .onAppear {
 //            Task {

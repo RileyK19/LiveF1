@@ -13,9 +13,10 @@ import Combine
 
 struct LiveConnectView: View {
     @ObservedObject var store: F1SessionStore
-    @StateObject var trackerVM: TrackMapViewModel = TrackMapViewModel()
+//    @StateObject var trackerVM: TrackMapViewModel = TrackMapViewModel()
     @State private var token: String = ""
-    @State private var liveClient: F1TimingClient?
+    @State var liveClient: F1TimingClient?
+//    @ObservedObject var liveClient: F1TimingClient
     @State private var showingBrowser = false
     @State private var hasSavedToken = TokenStore.load() != nil
     @State private var delay: Int = 0
@@ -45,7 +46,8 @@ struct LiveConnectView: View {
                     .buttonStyle(.plain)
                     
 //                    NavigationLink { TrackMapView(store: store, VM: trackerVM) } label: {
-                    NavigationLink(value: Destination.trackMap(store, trackerVM)) {
+//                    NavigationLink(value: Destination.trackMap(store, trackerVM)) {
+                    NavigationLink(value: Destination.trackMap(store, store.trackMapVM)) {
                         SquircleCard(icon: "map", title: "Driver Tracker", subtitle: "Track map of driver positions", color: .orange)
                     }
                     .buttonStyle(.plain)
@@ -156,7 +158,8 @@ struct LiveConnectView: View {
                 } trailing: {
                     PillButton(title: "Reconnect", color: statusText == "Connected" ? .green : statusText == "Disconnected" ? .red : .orange) {
                         connect()
-                        trackerVM.reset()
+//                        trackerVM.reset()
+                        store.trackMapVM.reset()
                     }
                 }
                 .padding(.horizontal, 20)
@@ -257,6 +260,7 @@ struct LiveConnectView: View {
             store.dataSource = client
             liveClient = client
             Task { await client.connect(token: liveClient?.currentToken) }
+//            Task { await liveClient.connect(token: liveClient.currentToken) }
         }
         .alert("(Optional) F1 TV Login", isPresented: $showingInfo) {
             Button("OK", role: .cancel) { }
@@ -270,6 +274,7 @@ struct LiveConnectView: View {
         store.dataSource = client
         liveClient = client
         Task { await client.connect(token: token) }
+//        Task { await liveClient.connect(token: token) }
     }
 }
 

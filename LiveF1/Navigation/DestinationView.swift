@@ -17,6 +17,8 @@ struct DestinationView: View {
         switch destination {
         case .liveConnect(let store):
             LiveConnectView(store: store)
+//        case .liveConnect(let store, let client):
+//            LiveConnectView(store: store, liveClient: client)
         case .sessionPicker3(let title, let sessionType, let dest):
             switch dest {
             case SessionDestination.lapPicker:
@@ -31,9 +33,33 @@ struct DestinationView: View {
                 SessionPickerView(title: title, sessionType: sessionType, route: { session in
                     router.push(.raceDetail(session))
                 })
+            case SessionDestination.replayLapPicker:
+                SessionPickerView(title: title, sessionType: sessionType, route: { session in
+                    router.push(.replayLapPicker(session))
+                })
             }
+        case .sessionPickerVmEnv(let dest, let store):
+            switch dest {
+            case SessionDestination.lapPicker:
+                SessionPickerView(route: { session in
+                    router.push(.lapPicker(session))
+                })
+            case SessionDestination.racePace:
+                SessionPickerView(route: { session in
+                    router.push(.racePace(session))
+                })
+            case SessionDestination.raceDetail:
+                SessionPickerView(route: { session in
+                    router.push(.raceDetailVmEnv(session, store))
+                })
+            case SessionDestination.replayLapPicker:
+                SessionPickerView(route: { session in
+                    router.push(.replayLapPicker(session))
+                })
+            }
+
         case .lapPicker(let session):
-            LapPickerView(session: session)
+            LapPickerView(session: session, destination: .speedTrace)
         case .sessionPicker2(let title, let dest):
             switch dest {
             case SessionDestination.lapPicker:
@@ -47,6 +73,10 @@ struct DestinationView: View {
             case SessionDestination.raceDetail:
                 SessionPickerView(title: title, route: { session in
                     router.push(.raceDetail(session))
+                })
+            case SessionDestination.replayLapPicker:
+                SessionPickerView(title: title, route: { session in
+                    router.push(.replayLapPicker(session))
                 })
             }
         case .racePace(let session):
@@ -65,9 +95,16 @@ struct DestinationView: View {
                 SessionPickerView(route: { session in
                     router.push(.raceDetail(session))
                 })
+            case SessionDestination.replayLapPicker:
+                SessionPickerView(route: { session in
+                    router.push(.replayLapPicker(session))
+                })
             }
         case .raceDetail(let session):
             RaceDetailView(session: session)
+        case .raceDetailVmEnv(let session, let store):
+            RaceDetailView(session: session)
+                .environmentObject(store)
         case .schedule(let store):
             ChampionshipScheduleView()
                 .environment(store)
@@ -86,8 +123,8 @@ struct DestinationView: View {
                 .environment(store)
         case .fiaDoc(let document):
             FIADocumentDetailView(document: document)
-        case .fiaDocList:
-            FIADocumentsView()
+        case .fiaDocList(let store):
+            FIADocumentsView(store: store)
         case .timingTower(let store):
             TimingTowerView(store: store)
                 .overlay(ToastContainerView(store: store))
@@ -101,6 +138,15 @@ struct DestinationView: View {
             StrategyAssistantView(viewModel: VM, selectedTab: tab)
         case .assistant(let VM):
             StrategyAssistantView(viewModel: VM)
+        case .lapReplay(let predictor, let laps):
+            LapReplayView(session: predictor, laps: laps)
+        case .replayLapPicker(let session):
+            LapPickerView(session: session, destination: .lapReplay)
+        case .appAssistant(let VM, let store, let docStore):
+            AppAssistantView()
+                .environment(store)
+                .environmentObject(VM)
+                .environmentObject(docStore)
         }
     }
 }

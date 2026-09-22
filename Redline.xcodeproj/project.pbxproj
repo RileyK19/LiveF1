@@ -55,9 +55,18 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		58561930305F7361002DE3DF /* Exceptions for "LiveF1Widget" folder in "Redline" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				LiveLockScreenWidget/F1SessionAttributes.swift,
+				LiveLockScreenWidget/LiveActivityManager.swift,
+			);
+			target = 58D674AE2FD1879100E13D17 /* Redline */;
+		};
 		58CA56B72FE1AFFA00772EAB /* Exceptions for "LiveF1" folder in "Redline" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				ChatbotAgent/Telemetry/Predictor/EvaluateStrategyTool.swift,
 				Info.plist,
 			);
 			target = 58D674AE2FD1879100E13D17 /* Redline */;
@@ -108,6 +117,7 @@
 				F1DBTrackSVGs/suzuka.svg,
 				F1DBTrackSVGs/zandvoort.svg,
 				LiveTiming/Models/ColorHelper.swift,
+				LiveTiming/Models/Driver.swift,
 				Menus/SpoilerWarningView.swift,
 			);
 			target = 58CA574E2FF7813A00772EAB /* RedlineWidgetExtension */;
@@ -127,6 +137,7 @@
 		58CA57552FF7813A00772EAB /* LiveF1Widget */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
+				58561930305F7361002DE3DF /* Exceptions for "LiveF1Widget" folder in "Redline" target */,
 				58CA57672FF7813C00772EAB /* Exceptions for "LiveF1Widget" folder in "RedlineWidgetExtension" target */,
 			);
 			path = LiveF1Widget;
@@ -258,6 +269,7 @@
 					};
 					58D674AE2FD1879100E13D17 = {
 						CreatedOnToolsVersion = 26.2;
+						LastSwiftMigration = 2620;
 					};
 				};
 			};
@@ -521,6 +533,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
+				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = LiveF1/LiveF1.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
@@ -550,6 +563,7 @@
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -562,6 +576,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
+				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = LiveF1/LiveF1.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;

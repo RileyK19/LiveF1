@@ -27,7 +27,8 @@ struct TrackMapView: View {
     }
 
     private var bounds: (minX: Double, maxX: Double, minY: Double, maxY: Double)? {
-        let pts = positionedDrivers.map { $0.pos }
+        var pts = positionedDrivers.map { (x: $0.pos.x, y: $0.pos.y) }
+        pts += VM.trailGrid.values.flatMap { $0 }
         guard !pts.isEmpty else { return nil }
         let xs = pts.map { $0.x }
         let ys = pts.map { $0.y }

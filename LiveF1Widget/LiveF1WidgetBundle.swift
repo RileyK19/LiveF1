@@ -12,5 +12,6 @@ import SwiftUI
 struct LiveF1WidgetBundle: WidgetBundle {
     var body: some Widget {
         NextSessionWidget()
+        F1LiveActivityWidget()
     }
 }

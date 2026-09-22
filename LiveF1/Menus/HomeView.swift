@@ -7,6 +7,7 @@
 
 import SwiftUI
 import NotificationLog
+import FoundationModels
 
 // MARK: - Reusable Card Components
 
@@ -210,6 +211,9 @@ struct LiveBadge: View {
 struct HomeView: View {
     @StateObject private var store = F1SessionStore()
     @StateObject private var championshipStore: ChampionshipDataStore = ChampionshipDataStore()
+    @StateObject private var currentSessionStore = CurrentSessionStore()
+//    @StateObject private var client = F1TimingClient()
+    @StateObject private var fiaStore = FIADocumentStore()
     @AppStorage("isDark") var isDark = false
     @State private var showingSettings = false
     @State private var mode: AppMode = .live
@@ -226,6 +230,16 @@ struct HomeView: View {
     
     private var mostRecent: (race: ChampionshipRace, name: String, session: ChampionshipSession)? {
         championshipStore.mostRecentSession
+    }
+
+    private var isAssistantAvailable: Bool {
+        switch SystemLanguageModel.default.availability {
+        case .available:
+            return true
+        case .unavailable(let reason):
+//            print("unavailable: \(reason)")
+            return false
+        }
     }
     
     var body: some View {
@@ -273,12 +287,19 @@ struct HomeView: View {
                     .buttonStyle(.plain)
                     .padding(.horizontal, 20)
                     
-                    // Telemetry row
-//                    NavigationLink {
-//                        SessionPickerView(title: "Speed Trace", sessionType: nil) { session in
-//                            LapPickerView(session: session)
-//                        }
-//                    } label: {
+                    if isAssistantAvailable {
+                        NavigationLink(value: Destination.appAssistant(currentSessionStore, championshipStore, fiaStore)) {
+                            RowCard(
+                                icon: "sparkles",
+                                title: "Assistant",
+                                subtitle: "Chatbot assistant for your questions",
+                                color: .orange
+                            )
+                        }
+                        .buttonStyle(.plain)
+                        .padding(.horizontal, 20)
+                    }
+                    
                     NavigationLink(value: Destination.sessionPicker3("Speed Trace", nil, SessionDestination.lapPicker)) {
                         RowCard(
                             icon: "waveform.path.ecg",
@@ -289,7 +310,60 @@ struct HomeView: View {
                     }
                     .buttonStyle(.plain)
                     .padding(.horizontal, 20)
+                    
+                    // Telemetry row
+//                    NavigationLink {
+//                        SessionPickerView(title: "Speed Trace", sessionType: nil) { session in
+//                            LapPickerView(session: session)
+//                        }
+//                    } label: {
+                    
+//                    HStack (spacing: 14) {
+//                        NavigationLink(value: Destination.sessionPicker3("Speed Trace", nil, SessionDestination.lapPicker)) {
+////                            RowCard(
+////                                icon: "waveform.path.ecg",
+////                                title: "Telemetry",
+////                                subtitle: "Speed trace data from past sessions",
+////                                color: .green
+////                            )
+//                            
+//                            SquircleCard(
+//                                icon: "waveform.path.ecg",
+//                                title: "Telemetry",
+//                                subtitle: "Speed trace data",
+//                                color: .green
+//                            )
+//                        }
+//                        .buttonStyle(.plain)
+//                        .padding(.horizontal, 20)
+                        
+                        // TODO uncomment once fixed
+//                        NavigationLink(value: Destination.sessionPicker3("Lap Replay", nil, SessionDestination.replayLapPicker)) {
+////                            RowCard(
+////                                icon: "point.topleft.down.curvedto.point.bottomright.up",
+////                                title: "Lap Replay",
+////                                subtitle: "Watch driving lines from past laps",
+////                                color: .red
+////                            )
+//                            SquircleCard(
+//                                icon: "point.topleft.down.curvedto.point.bottomright.up",
+//                                title: "Lap Replay",
+//                                subtitle: "Watch driving lines",
+//                                color: .red
+//                            )
+//
+//                        }
+//                        .buttonStyle(.plain)
+//                    }
+//                    .padding(.horizontal, 20)
 
+                    
+//                    NavigationLink(value: Destination.fiaDocList(fiaStore)) {
+//                        RowCard(icon: "doc.text.fill", title: "Documents", subtitle: "FIA bulletins", color: .blue)
+//                    }
+//                    .buttonStyle(.plain)
+//                    .padding(.horizontal, 20)
+                    
                     // Two column grid
                     HStack(spacing: 14) {
 //                        NavigationLink { ReplayPickerView(store: store) } label: {
@@ -308,12 +382,10 @@ struct HomeView: View {
                         .buttonStyle(.plain)
 
 //                        NavigationLink { FIADocumentsView() } label: {
-                        NavigationLink(value: Destination.fiaDocList) {
-                            SquircleCard(icon: "doc.text.fill", title: "Documents", subtitle: "FIA bulletins", color: .blue)
-                        }
-                        .buttonStyle(.plain)
-                    }
-                    .padding(.horizontal, 20)
+//                        NavigationLink(value: Destination.fiaDocList) {
+//                            SquircleCard(icon: "doc.text.fill", title: "Documents", subtitle: "FIA bulletins", color: .blue)
+//                        }
+//                        .buttonStyle(.plain)
 
                     // Predictor row
 //                    NavigationLink {
@@ -321,16 +393,30 @@ struct HomeView: View {
 //                            RaceDetailView(session: session)
 //                        }
 //                    } label: {
-                    NavigationLink(value: Destination.sessionPicker(SessionDestination.raceDetail)) {
-                        RowCard(
-                            icon: "chart.line.uptrend.xyaxis",
-                            title: "Predictor",
-                            subtitle: "Lap time & strategy forecasts",
-                            color: .purple
-                        )
+                        NavigationLink(value: Destination.sessionPickerVmEnv(SessionDestination.raceDetail, currentSessionStore)) {
+                            SquircleCard(
+                                icon: "chart.line.uptrend.xyaxis",
+                                title: "Predictor",
+                                subtitle: "Lap time forecasts",
+                                color: .purple
+                            )
+                        }
+                        .buttonStyle(.plain)
+//                    .padding(.horizontal, 20)
+                    }
+                    .padding(.horizontal, 20)
+                    
+                    
+                    NavigationLink(value: Destination.fiaDocList(fiaStore)) {
+                        RowCard(icon: "doc.text.fill", title: "Documents", subtitle: "FIA bulletins", color: .blue)
                     }
                     .buttonStyle(.plain)
                     .padding(.horizontal, 20)
+//                    NavigationLink(value: Destination.schedule(championshipStore)) {
+//                        RowCard(icon: "calendar.circle.fill", title: "Schedule", subtitle: "2026 calendar", color: .red)
+//                    }
+//                    .buttonStyle(.plain)
+//                    .padding(.horizontal, 20)
                     
                     // Two column grid
                     HStack(spacing: 14) {
@@ -351,6 +437,17 @@ struct HomeView: View {
                             SquircleCard(icon: "trophy.fill", title: "Results", subtitle: "Drivers & teams", color: .yellow)
                         }
                         .buttonStyle(.plain)
+                        
+//                        
+//                        NavigationLink(value: Destination.weather(championshipStore)) {
+//                            SquircleCard(
+//                                icon: "cloud.sun.fill",
+//                                title: "Track Weather",
+//                                subtitle: "Session forecast",
+//                                color: .blue
+//                            )
+//                        }
+//                        .buttonStyle(.plain)
                     }
                     .padding(.horizontal, 20)
                     
@@ -403,6 +500,7 @@ struct HomeView: View {
         .task {
             await championshipStore.fetchAllIfNeeded()
             await championshipStore.scheduleNotificationsForNextRace()
+//            await client.connect(token: client.currentToken)
         }
     }
 }

@@ -14,7 +14,7 @@ import NaturalLanguage
 
 struct FIADocumentsView: View {
 
-    @StateObject private var store = FIADocumentStore()
+    @StateObject var store: FIADocumentStore // = FIADocumentStore()
 
     var body: some View {
 //        NavigationStack {
@@ -552,8 +552,8 @@ private struct BannerView: View {
     }
 }
 
-// MARK: - Preview
-
-#Preview {
-    FIADocumentsView()
-}
+//// MARK: - Preview
+//
+//#Preview {
+//    FIADocumentsView()
+//}

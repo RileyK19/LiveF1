@@ -139,6 +139,8 @@ struct ManualStrategyView: View {
                             Text("Result")
                                 .font(.headline)
                             StrategyResultCard(
+                                driverNumber: viewModel.selectedDriverNumber ?? 0,
+                                driverName: "#\(viewModel.selectedDriverNumber ?? 0)",
                                 actual: viewModel.stintsForComparisonDriver,
                                 hypothetical: hypothetical,
                                 timeDelta: viewModel.calculateTimeDeltaVsDriver(hypothetical: hypothetical),

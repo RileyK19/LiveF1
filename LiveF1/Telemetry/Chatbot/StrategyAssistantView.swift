@@ -21,21 +21,22 @@ struct StrategyAssistantView: View {
     @State var selectedTab: String = "Chat"
 
     var body: some View {
-        TabView (selection: $selectedTab) {
-            // AI tab
-            aiChatView
-                .tabItem {
-                    Label("AI Assistant", systemImage: "bubble.left.and.text.bubble.right")
-                }
-                .tag("Chat")
-
-            // Manual tab
-            ManualStrategyView(viewModel: viewModel)
-                .tabItem {
-                    Label("Manual", systemImage: "slider.horizontal.3")
-                }
-                .tag("Manual")
-        }
+//        TabView (selection: $selectedTab) {
+//            // AI tab
+//            aiChatView
+//                .tabItem {
+//                    Label("AI Assistant", systemImage: "bubble.left.and.text.bubble.right")
+//                }
+//                .tag("Chat")
+//
+//            // Manual tab
+//            ManualStrategyView(viewModel: viewModel)
+//                .tabItem {
+//                    Label("Manual", systemImage: "slider.horizontal.3")
+//                }
+//                .tag("Manual")
+//        }
+        ManualStrategyView(viewModel: viewModel)
         .navigationTitle("Strategy")
         .navigationBarTitleDisplayMode(.inline)
         .alert("Error", isPresented: Binding(
@@ -257,21 +258,35 @@ struct ChatBubbleView: View {
                 if message.role == .assistant { Spacer() }
             }
         case .strategyResult(let actual, let hypothetical, let timeDelta):
-            StrategyResultCard(actual: actual, hypothetical: hypothetical, timeDelta: timeDelta, viewModel: viewModel)
+            StrategyResultCard(
+                driverNumber: viewModel.selectedDriverNumber ?? 0,
+                driverName: "#\(viewModel.selectedDriverNumber ?? 0)",
+                actual: actual,
+                hypothetical: hypothetical,
+                timeDelta: timeDelta,
+                viewModel: viewModel
+            )
         }
     }
 }
 
 struct StrategyResultCard: View {
+    let driverNumber: Int
+    let driverName: String
     let actual: [F1PredictorStint]
     let hypothetical: [F1PredictorStint]
     let timeDelta: Double?
     @ObservedObject var viewModel: RaceViewModel
     @State private var page = 0
+    @State private var comparisonDriverNumber: Int? = nil
+    @State private var comparisonDelta: Double? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            // Time delta header
+            Text(driverName)
+                .font(.caption.bold())
+                .foregroundStyle(.secondary)
+
             if let delta = timeDelta {
                 HStack {
                     Image(systemName: delta < 0 ? "checkmark.circle.fill" : "xmark.circle.fill")
@@ -283,12 +298,23 @@ struct StrategyResultCard: View {
                 }
             }
 
+            HStack {
+                comparisonPicker
+                
+                if let compDelta = comparisonDelta, let compNumber = comparisonDriverNumber {
+                    Text("vs. #\(compNumber)'s actual race: \(formatDelta(compDelta))")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
             Divider()
 
             TabView(selection: $page) {
                 stintComparisonPage
                     .tag(0)
                 deltaChartPage
+                    .id(comparisonDriverNumber)
                     .tag(1)
             }
             .tabViewStyle(.page(indexDisplayMode: .always))
@@ -300,6 +326,20 @@ struct StrategyResultCard: View {
         .frame(maxWidth: .infinity)
     }
 
+    private var comparisonPicker: some View {
+        Picker("Compare against", selection: $comparisonDriverNumber) {
+            Text("None").tag(Int?.none)
+            ForEach(viewModel.drivers, id: \.self) { number in
+                Text("#\(number)").tag(Int?.some(number))
+            }
+        }
+        .pickerStyle(.menu)
+        .font(.caption)
+        .onChange(of: comparisonDriverNumber) { _, newValue in
+            comparisonDelta = viewModel.calculateTimeDeltaVsDriver(hypothetical: hypothetical, against: newValue)
+        }
+    }
+
     // MARK: - Page 1: Stint comparison
 
     private var stintComparisonPage: some View {
@@ -308,7 +348,7 @@ struct StrategyResultCard: View {
             Divider()
             stintColumn(title: "Hypothetical", stints: hypothetical)
         }
-        .padding(.bottom, 24) // room for page dots
+        .padding(.bottom, 24)
     }
 
     private func stintColumn(title: String, stints: [F1PredictorStint]) -> some View {
@@ -319,7 +359,7 @@ struct StrategyResultCard: View {
             ForEach(stints) { stint in
                 HStack(spacing: 6) {
                     Circle()
-                        .fill(Color(hex: TyreCompound(rawValue: stint.compound ?? "UNKNOWN" )?.color ?? "#888888"))
+                        .fill(Color(hex: TyreCompound(rawValue: stint.compound ?? "UNKNOWN")?.color ?? "#888888"))
                         .frame(width: 8, height: 8)
                     Text("\(stint.compound?.prefix(3) ?? "???") \(stint.lapStart)–\(stint.lapEnd ?? 0)")
                         .font(.caption)
@@ -333,7 +373,6 @@ struct StrategyResultCard: View {
 
     private var deltaChartPage: some View {
         Chart {
-            // Zero reference
             RuleMark(y: .value("Even", 0))
                 .foregroundStyle(.secondary.opacity(0.4))
                 .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 4]))
@@ -376,29 +415,11 @@ struct StrategyResultCard: View {
         .padding(.horizontal, 4)
     }
 
-    // MARK: - Cumulative delta calculation
-
-//    private var cumulativeDeltaPoints: [DeltaPoint] {
-//        guard let median = viewModel.driverMedianLapTime,
-//              let trackModel = viewModel.trackEvolutionModel
-//        else { return [] }
-//
-//        return StrategyCalculator.shared.cumulativeDeltaPoints(
-//            actual: actual,
-//            hypothetical: hypothetical,
-//            median: median,
-//            trackModel: trackModel,
-//            annotatedLaps: viewModel.annotatedLaps
-//        )
-//    }
     private var cumulativeDeltaPoints: [DeltaPoint] {
-        guard let median = viewModel.comparisonDriverMedianLapTime,
-              let trackModel = viewModel.trackEvolutionModel
-        else { return [] }
-
-        let baseLaps = viewModel.comparisonDriverNumber != nil
-            ? viewModel.comparisonAnnotatedLaps
-            : viewModel.annotatedLaps
+        guard let trackModel = viewModel.trackEvolutionModel else { return [] }
+        let driver = comparisonDriverNumber ?? viewModel.selectedDriverNumber
+        guard let driver, let median = viewModel.medianLapTime(for: driver) else { return [] }
+        let baseLaps = viewModel.annotatedLaps(for: driver)
 
         return StrategyCalculator.shared.cumulativeDeltaPoints(
             actual: actual,
@@ -409,13 +430,166 @@ struct StrategyResultCard: View {
         )
     }
 
-    // MARK: - Helpers
-
     private func formatDelta(_ seconds: Double) -> String {
         let sign = seconds >= 0 ? "+" : ""
         return String(format: "\(sign)%.1fs", seconds)
     }
 }
+
+//struct StrategyResultCard: View {
+//    let actual: [F1PredictorStint]
+//    let hypothetical: [F1PredictorStint]
+//    let timeDelta: Double?
+//    @ObservedObject var viewModel: RaceViewModel
+//    @State private var page = 0
+//
+//    var body: some View {
+//        VStack(alignment: .leading, spacing: 12) {
+//            // Time delta header
+//            if let delta = timeDelta {
+//                HStack {
+//                    Image(systemName: delta < 0 ? "checkmark.circle.fill" : "xmark.circle.fill")
+//                        .foregroundStyle(delta < 0 ? .green : .red)
+//                    Text(delta < 0
+//                         ? "Hypothetical is \(formatDelta(delta)) faster"
+//                         : "Hypothetical is \(formatDelta(delta)) slower")
+//                        .font(.subheadline.bold())
+//                }
+//            }
+//
+//            Divider()
+//
+//            TabView(selection: $page) {
+//                stintComparisonPage
+//                    .tag(0)
+//                deltaChartPage
+//                    .tag(1)
+//            }
+//            .tabViewStyle(.page(indexDisplayMode: .always))
+//            .frame(height: 200)
+//        }
+//        .padding(12)
+//        .background(.secondary.opacity(0.1))
+//        .clipShape(RoundedRectangle(cornerRadius: 16))
+//        .frame(maxWidth: .infinity)
+//    }
+//
+//    // MARK: - Page 1: Stint comparison
+//
+//    private var stintComparisonPage: some View {
+//        HStack(alignment: .top, spacing: 16) {
+//            stintColumn(title: "Actual", stints: actual)
+//            Divider()
+//            stintColumn(title: "Hypothetical", stints: hypothetical)
+//        }
+//        .padding(.bottom, 24) // room for page dots
+//    }
+//
+//    private func stintColumn(title: String, stints: [F1PredictorStint]) -> some View {
+//        VStack(alignment: .leading, spacing: 6) {
+//            Text(title)
+//                .font(.caption.bold())
+//                .foregroundStyle(.secondary)
+//            ForEach(stints) { stint in
+//                HStack(spacing: 6) {
+//                    Circle()
+//                        .fill(Color(hex: TyreCompound(rawValue: stint.compound ?? "UNKNOWN" )?.color ?? "#888888"))
+//                        .frame(width: 8, height: 8)
+//                    Text("\(stint.compound?.prefix(3) ?? "???") \(stint.lapStart)–\(stint.lapEnd ?? 0)")
+//                        .font(.caption)
+//                }
+//            }
+//        }
+//        .frame(maxWidth: .infinity, alignment: .leading)
+//    }
+//
+//    // MARK: - Page 2: Cumulative delta chart
+//
+//    private var deltaChartPage: some View {
+//        Chart {
+//            // Zero reference
+//            RuleMark(y: .value("Even", 0))
+//                .foregroundStyle(.secondary.opacity(0.4))
+//                .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 4]))
+//
+//            ForEach(cumulativeDeltaPoints, id: \.lap) { point in
+//                LineMark(
+//                    x: .value("Lap", point.lap),
+//                    y: .value("Delta", point.delta)
+//                )
+//                .foregroundStyle(timeDelta ?? 0 < 0 ? Color.green : Color.red)
+//
+//                AreaMark(
+//                    x: .value("Lap", point.lap),
+//                    y: .value("Delta", point.delta)
+//                )
+//                .foregroundStyle(
+//                    (timeDelta ?? 0 < 0 ? Color.green : Color.red).opacity(0.1)
+//                )
+//            }
+//        }
+//        .chartYAxis {
+//            AxisMarks { value in
+//                AxisValueLabel {
+//                    if let s = value.as(Double.self) {
+//                        Text(formatDelta(s))
+//                            .font(.caption2)
+//                    }
+//                }
+//                AxisGridLine()
+//            }
+//        }
+//        .chartXAxis {
+//            AxisMarks(values: .automatic) {
+//                AxisValueLabel()
+//                    .font(.caption2)
+//                AxisGridLine()
+//            }
+//        }
+//        .padding(.bottom, 24)
+//        .padding(.horizontal, 4)
+//    }
+//
+//    // MARK: - Cumulative delta calculation
+//
+////    private var cumulativeDeltaPoints: [DeltaPoint] {
+////        guard let median = viewModel.driverMedianLapTime,
+////              let trackModel = viewModel.trackEvolutionModel
+////        else { return [] }
+////
+////        return StrategyCalculator.shared.cumulativeDeltaPoints(
+////            actual: actual,
+////            hypothetical: hypothetical,
+////            median: median,
+////            trackModel: trackModel,
+////            annotatedLaps: viewModel.annotatedLaps
+////        )
+////    }
+//    private var cumulativeDeltaPoints: [DeltaPoint] {
+//        guard let median = viewModel.comparisonDriverMedianLapTime,
+//              let trackModel = viewModel.trackEvolutionModel
+//        else { return [] }
+//
+//        let baseLaps = viewModel.comparisonDriverNumber != nil
+//            ? viewModel.comparisonAnnotatedLaps
+//            : viewModel.annotatedLaps
+//
+//        return StrategyCalculator.shared.cumulativeDeltaPoints(
+//            actual: actual,
+//            hypothetical: hypothetical,
+//            median: median,
+//            trackModel: trackModel,
+//            annotatedLaps: baseLaps
+//        )
+//    }
+//
+//    // MARK: - Helpers
+//
+//    private func formatDelta(_ seconds: Double) -> String {
+//        let sign = seconds >= 0 ? "+" : ""
+//        return String(format: "\(sign)%.1fs", seconds)
+//    }
+//}
 
 // MARK: Preview
 

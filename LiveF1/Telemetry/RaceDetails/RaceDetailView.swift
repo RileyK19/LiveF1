@@ -10,55 +10,61 @@ import Combine
 
 struct RaceDetailView: View {
     let session: F1PredictorSession
-    @StateObject private var viewModel: RaceViewModel
+    
+    @EnvironmentObject var currentSessionStore: CurrentSessionStore
 
-    init(session: F1PredictorSession) {
-        self.session = session
-        _viewModel = StateObject(wrappedValue: { RaceViewModel(session: session) }())
-    }
+    private var viewModel: RaceViewModel? { currentSessionStore.raceViewModel }
+    
+//    @StateObject private var viewModel: RaceViewModel
+//
+//    init(session: F1PredictorSession) {
+//        self.session = session
+//        _viewModel = StateObject(wrappedValue: { RaceViewModel(session: session) }())
+//    }
 
     var body: some View {
         Group {
-            if viewModel.isLoading {
-                ProgressView("Loading race data...")
-            } else if let error = viewModel.error {
-                VStack(spacing: 12) {
-                    Text("Failed to load race data")
-                        .font(.headline)
-                    Text(error)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    Button("Retry") {
-                        Task { await viewModel.load() }
+            if let viewModel {
+                if viewModel.isLoading {
+                    ProgressView("Loading race data...")
+                } else if let error = viewModel.error {
+                    VStack(spacing: 12) {
+                        Text("Failed to load race data").font(.headline)
+                        Text(error).font(.caption).foregroundStyle(.secondary)
+                        Button("Retry") { Task { await viewModel.load() } }
+                    }
+                } else {
+                    VStack(spacing: 0) {
+                        driverPicker(viewModel: viewModel)
+                        LapTimeChartView(viewModel: viewModel)
                     }
                 }
             } else {
-                VStack(spacing: 0) {
-                    driverPicker
-                    LapTimeChartView(viewModel: viewModel)
-                }
+                ProgressView("Loading race data...")
             }
         }
         .navigationTitle(session.countryName)
         .navigationBarTitleDisplayMode(.large)
-        .task { await viewModel.load() }
+        .task { currentSessionStore.load(session: session) }
         .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-//                NavigationLink(destination: StrategyAssistantView(viewModel: viewModel)) {
-                NavigationLink(value: Destination.assistant(viewModel)) {
-                    Image(systemName: "bubble.left.and.text.bubble.right")
-                }
-            }
-            ToolbarItem(placement: .navigationBarTrailing) {
-//                NavigationLink(destination: StrategyAssistantView(viewModel: viewModel, selectedTab: "Manual")) {
-                NavigationLink(value: Destination.assistant2(viewModel, "Manual")) {
-                    Image(systemName: "slider.horizontal.3")
+            if let viewModel {
+//                ToolbarItem(placement: .navigationBarTrailing) {
+//                    //                NavigationLink(destination: StrategyAssistantView(viewModel: viewModel)) {
+//                    NavigationLink(value: Destination.assistant(viewModel)) {
+//                        Image(systemName: "bubble.left.and.text.bubble.right")
+//                    }
+//                }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    //                NavigationLink(destination: StrategyAssistantView(viewModel: viewModel, selectedTab: "Manual")) {
+                    NavigationLink(value: Destination.assistant2(viewModel, "Manual")) {
+                        Image(systemName: "slider.horizontal.3")
+                    }
                 }
             }
         }
     }
 
-    private var driverPicker: some View {
+    private func driverPicker(viewModel: RaceViewModel) -> some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
                 ForEach(viewModel.drivers, id: \.self) { driver in

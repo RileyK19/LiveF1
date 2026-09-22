@@ -18,6 +18,8 @@ struct ChampionshipTrackView: View {
     var primary: Color = Color.black
     var secondary: Color? = nil
     
+    var lineWidth: CGFloat = 2
+    
     @Environment(\.widgetRenderingMode) private var renderingMode
 
     var body: some View {
@@ -27,12 +29,12 @@ struct ChampionshipTrackView: View {
                 ZStack {
                     if let secondary = secondary, renderingMode == .fullColor {
                         ChampionshipTrackShape(cgPath: path)
-                            .stroke(secondary, lineWidth: 4)
+                            .stroke(secondary, lineWidth: lineWidth * 2)
                             .frame(width: width, height: height)
                     }
 
                     ChampionshipTrackShape(cgPath: path)
-                        .stroke(renderingMode == .fullColor ? primary : .primary, lineWidth: 2)
+                        .stroke(renderingMode == .fullColor ? primary : .primary, lineWidth: lineWidth)
                         .frame(width: width, height: height)
                         .widgetAccentable()
                 }
@@ -44,6 +46,7 @@ struct ChampionshipTrackView: View {
     }
     
     func loadTrackPath(from name: String) -> CGPath? {
+        print(name)
         var revisedName = name.lowercased().replacingOccurrences(of: " ", with: "-")
         guard let url = Bundle.main.url(forResource: revisedName, withExtension: "svg") else {
             return nil

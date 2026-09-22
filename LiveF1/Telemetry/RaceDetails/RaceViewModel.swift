@@ -201,6 +201,48 @@ class RaceViewModel: ObservableObject, Equatable, Hashable {
             baseLaps: baseLaps
         )
     }
+    
+    // MARK: - Per-driver helpers (parameterized, no dependency on selectedDriverNumber/comparisonDriverNumber)
+
+    func annotatedLaps(for driver: Int) -> [AnnotatedLap] {
+        laps
+            .filter { $0.driverNumber == driver && !$0.isPitOutLap && $0.lapDuration != nil }
+            .sorted { $0.lapNumber < $1.lapNumber }
+            .compactMap { lap in
+                guard let duration = lap.lapDuration,
+                      let stint = stints.stint(for: driver, atLap: lap.lapNumber),
+                      let age = stints.tyreAge(for: driver, atLap: lap.lapNumber)
+                else { return nil }
+                return AnnotatedLap(lap: lap, tyreAge: age, compound: stint.compoundEnum, lapDuration: duration)
+            }
+    }
+
+    func medianLapTime(for driver: Int) -> Double? {
+        let durations = laps
+            .filter { $0.driverNumber == driver && !$0.isPitOutLap && $0.lapDuration != nil }
+            .compactMap { $0.lapDuration }
+            .sorted()
+        guard !durations.isEmpty else { return nil }
+        return durations[durations.count / 2]
+    }
+
+    func calculateTimeDeltaVsDriver(hypothetical: [F1PredictorStint], against comparisonDriver: Int?) -> Double? {
+        guard let trackModel = trackEvolutionModel else { return nil }
+        guard let driver = comparisonDriver ?? selectedDriverNumber,
+              let median = medianLapTime(for: driver)
+        else { return nil }
+
+        let baseStints = stints.stints(for: driver)
+        let baseLaps = annotatedLaps(for: driver)
+
+        return StrategyCalculator.shared.timeDeltaVsDriver(
+            hypothetical: hypothetical,
+            baseStints: baseStints,
+            median: median,
+            trackModel: trackModel,
+            baseLaps: baseLaps
+        )
+    }
 }
 
 // MARK: - AnnotatedLap

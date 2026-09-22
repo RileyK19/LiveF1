@@ -28,7 +28,14 @@ enum LoadState: Equatable {
 // MARK: - Store
 
 @MainActor
-final class FIADocumentStore: ObservableObject {
+final class FIADocumentStore: ObservableObject, Hashable {
+    nonisolated static func == (lhs: FIADocumentStore, rhs: FIADocumentStore) -> Bool {
+        lhs === rhs
+    }
+
+    nonisolated func hash(into hasher: inout Hasher) {
+        hasher.combine(ObjectIdentifier(self))
+    }
 
     // MARK: Published State
 
