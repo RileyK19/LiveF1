@@ -8,25 +8,25 @@
 import Combine
 import Foundation
 
+struct SpeedTraceSample: Identifiable {
+    let id = UUID()
+    let label: String
+    let elapsed: Double
+    let speed: Int?
+    let throttle: Int?
+    let brake: Int?
+    let gear: Int?
+    var distance: Double?
+    var delta: Double?
+    var refElapsed: Double?
+}
+
 @MainActor
 class SpeedTraceViewModel: ObservableObject {
     let session: F1PredictorSession
 
-    struct Sample: Identifiable {
-        let id = UUID()
-        let label: String
-        let elapsed: Double
-        let speed: Int?
-        let throttle: Int?
-        let brake: Int?
-        let gear: Int?
-        var distance: Double?
-        var delta: Double?
-        var refElapsed: Double?
-    }
-
-    @Published var samples: [Sample] = []
-    @Published var deltaSamples: [Sample] = []
+    @Published var samples: [SpeedTraceSample] = []
+    @Published var deltaSamples: [SpeedTraceSample] = []
     @Published var isLoading = false
     @Published var error: String?
 
@@ -39,7 +39,7 @@ class SpeedTraceViewModel: ObservableObject {
     func loadLaps(_ laps: [F1Lap]) async {
         isLoading = true
         error = nil
-        var all: [Sample] = []
+        var all: [SpeedTraceSample] = []
         lapDurations = [:]
 
         for lap in laps {
@@ -55,7 +55,7 @@ class SpeedTraceViewModel: ObservableObject {
                     dateEnd: start.addingTimeInterval(duration)
                 )
                 all.append(contentsOf: raw.map {
-                    Sample(
+                    SpeedTraceSample(
                         label: label,
                         elapsed: $0.date.timeIntervalSince(start),
                         speed: $0.speed,
@@ -76,7 +76,7 @@ class SpeedTraceViewModel: ObservableObject {
 
     func calcDistances() async {
         let uniqueLabels = Set(samples.map(\.label))
-        var rawDistances: [String: [(id: Sample.ID, distance: Double)]] = [:]
+        var rawDistances: [String: [(id: SpeedTraceSample.ID, distance: Double)]] = [:]
 
         // pass 1: raw distance per lap via speed integration (trapezoidal rule)
         for label in uniqueLabels {
@@ -84,7 +84,7 @@ class SpeedTraceViewModel: ObservableObject {
             var prevElapsed: Double = 0.0
             var prevSpeed: Double = 0.0
             var total: Double = 0.0
-            var distances: [(id: Sample.ID, distance: Double)] = []
+            var distances: [(id: SpeedTraceSample.ID, distance: Double)] = []
 
             for sample in sortedSamples {
                 let currSpeed = Double(sample.speed ?? 0) / 3.6 // km/h -> m/s

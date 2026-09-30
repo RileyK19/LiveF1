@@ -393,25 +393,29 @@ struct HomeView: View {
 //                            RaceDetailView(session: session)
 //                        }
 //                    } label: {
-                        NavigationLink(value: Destination.sessionPickerVmEnv(SessionDestination.raceDetail, currentSessionStore)) {
-                            SquircleCard(
-                                icon: "chart.line.uptrend.xyaxis",
-                                title: "Predictor",
-                                subtitle: "Lap time forecasts",
-                                color: .purple
-                            )
+                        
+                        
+                        NavigationLink(value: Destination.fiaDocList(fiaStore)) {
+                            SquircleCard(icon: "doc.text.fill", title: "Documents", subtitle: "FIA bulletins", color: .blue)
                         }
                         .buttonStyle(.plain)
+                        
 //                    .padding(.horizontal, 20)
                     }
                     .padding(.horizontal, 20)
                     
-                    
-                    NavigationLink(value: Destination.fiaDocList(fiaStore)) {
-                        RowCard(icon: "doc.text.fill", title: "Documents", subtitle: "FIA bulletins", color: .blue)
+                    NavigationLink(value: Destination.sessionPicker(SessionDestination.raceDetail)) {
+//                        NavigationLink(value: Destination.sessionPickerVmEnv(SessionDestination.raceDetail, currentSessionStore)) {
+                        RowCard(
+                            icon: "chart.line.uptrend.xyaxis",
+                            title: "Lap Time Analyzer",
+                            subtitle: "Race lap times and strategy forecast",
+                            color: .purple
+                        )
                     }
                     .buttonStyle(.plain)
                     .padding(.horizontal, 20)
+                    
 //                    NavigationLink(value: Destination.schedule(championshipStore)) {
 //                        RowCard(icon: "calendar.circle.fill", title: "Schedule", subtitle: "2026 calendar", color: .red)
 //                    }

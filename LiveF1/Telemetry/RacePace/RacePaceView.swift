@@ -43,6 +43,10 @@ struct RacePaceView: View {
                             Image(systemName: "line.3.horizontal.decrease.circle")
                         }
                     }
+                    
+                    ToolbarItem(placement: .topBarTrailing) {
+                        ExportMenu(source: self)
+                    }
                 }
             }
         }
@@ -58,20 +62,55 @@ struct RacePaceView: View {
     }
 }
 
+
+
+extension RacePaceView: Exportable {
+    var exportContent: some View {
+        RacePaceExportLayout(
+            driverStats: viewModel.driverStats,
+            paceByLap: viewModel.racePaceByLap,
+            selectedDriverNumbers: selectedDriverNumbers,
+            fastestLapTime: viewModel.fastestLapTime,
+            sessionName: "\(viewModel.session.circuitShortName) Grand Prix"
+        )
+    }
+    var exportFilename: String { "RacePace-\(viewModel.session.circuitShortName)" }
+}
+
 struct RacePaceBarChart: View {
-    @ObservedObject var viewModel: RacePaceViewModel
-    
+    let driverStats: [DriverPaceStats]
+    let fastestLapTime: Double
+
     private let widthPerDriver: CGFloat = 70
-    
+
     @Binding var selectedDriverNumbers: Set<Int>
     @State private var selectedStat: DriverPaceStats?
     @State private var tapPosition: CGPoint = .zero
-    
-    
+
+    // Plain-data init — used by both live and export paths
+    init(
+        driverStats: [DriverPaceStats],
+        fastestLapTime: Double,
+        selectedDriverNumbers: Binding<Set<Int>>
+    ) {
+        self.driverStats = driverStats
+        self.fastestLapTime = fastestLapTime
+        self._selectedDriverNumbers = selectedDriverNumbers
+    }
+
+    // Convenience init — live screen keeps calling it the same way it does today
+    init(viewModel: RacePaceViewModel, selectedDriverNumbers: Binding<Set<Int>>) {
+        self.init(
+            driverStats: viewModel.driverStats,
+            fastestLapTime: viewModel.fastestLapTime,
+            selectedDriverNumbers: selectedDriverNumbers
+        )
+    }
+
     private var filteredStats: [DriverPaceStats] {
         selectedDriverNumbers.isEmpty
-            ? viewModel.driverStats
-            : viewModel.driverStats.filter { selectedDriverNumbers.contains($0.driverNumber) }
+            ? driverStats                                 // was: viewModel.driverStats
+            : driverStats.filter { selectedDriverNumbers.contains($0.driverNumber) }
     }
 
     private var yDomain: ClosedRange<Double> {
@@ -129,7 +168,7 @@ struct RacePaceBarChart: View {
                             AxisGridLine()
                             AxisValueLabel {
                                 if let percent = value.as(Double.self) {
-                                    let seconds = viewModel.fastestLapTime * (percent / 100)
+                                    let seconds = fastestLapTime * (percent / 100)
                                     VStack(alignment: .trailing, spacing: 1) {
                                         Text("\(Int(percent))%")
                                         Text(formatLapTime(seconds))
@@ -177,7 +216,7 @@ struct RacePaceBarChart: View {
                     
                     // NEW: floating overlay card
                     if let stat = selectedStat {
-                        DriverStatOverlayCard(stat: stat, fastestLapTime: viewModel.fastestLapTime) {
+                        DriverStatOverlayCard(stat: stat, fastestLapTime: fastestLapTime) {
                             selectedStat = nil
                         }
                         .position(
@@ -289,10 +328,12 @@ struct RacePaceTimelineChart: View {
 
     let paceByLap: [Int: [DriverPaceStats]]
     let selectedDriverNumbers: Set<Int>
+    var showControls: Bool = true
 
-    init(paceByLap: [Int: [DriverPaceStats]], selectedDriverNumbers: Set<Int>) {
+    init(paceByLap: [Int: [DriverPaceStats]], selectedDriverNumbers: Set<Int>, showControls: Bool = true) {
         self.paceByLap = paceByLap
         self.selectedDriverNumbers = selectedDriverNumbers
+        self.showControls = showControls
 
         let fullSpan = Self.computeFullSpan(paceByLap: paceByLap, selectedDriverNumbers: selectedDriverNumbers)
         _zoomSpan = State(initialValue: fullSpan)
@@ -360,22 +401,25 @@ struct RacePaceTimelineChart: View {
                 Text("Pace over last 5 laps")
                     .font(.headline)
 
-                Spacer()
-
-                Image(systemName: "minus.magnifyingglass")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
-                Slider(
-                    value: $zoomSpan,
-                    in: 0.5...maxZoomSpan,
-                    step: 0.1
-                )
-                .frame(width: 120)
-
-                Image(systemName: "plus.magnifyingglass")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                if showControls {
+                    
+                    Spacer()
+                    
+                    Image(systemName: "minus.magnifyingglass")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    
+                    Slider(
+                        value: $zoomSpan,
+                        in: 0.5...maxZoomSpan,
+                        step: 0.1
+                    )
+                    .frame(width: 120)
+                    
+                    Image(systemName: "plus.magnifyingglass")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
             .padding(.horizontal)
 
@@ -411,7 +455,7 @@ struct RacePaceTimelineChart: View {
                 }
             }
             .chartLegend(position: .bottom, spacing: 12)
-            .chartScrollableAxes([.horizontal, .vertical])
+            .chartScrollableAxes(showControls ? [.horizontal, .vertical] : [])
             .chartXVisibleDomain(length: 15)
             .chartYVisibleDomain(length: max(zoomSpan, 0.1))
             .frame(height: 280)

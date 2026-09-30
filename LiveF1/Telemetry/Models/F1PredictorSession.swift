@@ -29,6 +29,7 @@ struct F1PredictorSession: Codable, Identifiable, Equatable, Hashable {
     let gmtOffset: String
     let year: Int
     let isCancelled: Bool
+    var hasLaps: Bool = true
 
     enum CodingKeys: String, CodingKey {
         case sessionKey = "session_key"

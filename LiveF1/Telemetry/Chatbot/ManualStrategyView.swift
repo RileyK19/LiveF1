@@ -54,6 +54,7 @@ struct ManualStrategyView: View {
                 }
             }
         }
+        .padding(.horizontal)
     }
 
     var body: some View {
@@ -154,6 +155,13 @@ struct ManualStrategyView: View {
         }
         .onAppear {
             if stints.isEmpty { loadActualStrategy() }
+        }
+        .toolbar {
+            if showResult {
+                ToolbarItem(placement: .topBarTrailing) {
+                    ExportMenu(source: self)
+                }
+            }
         }
     }
 
@@ -352,4 +360,21 @@ struct StintEditorRow: View {
         .background(.secondary.opacity(0.08))
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
+}
+
+extension ManualStrategyView: Exportable {
+    var exportContent: some View {
+        HypotheticalStintExportLayout(
+            driverName: "#\(viewModel.selectedDriverNumber ?? 0)",
+            timeDelta: viewModel.calculateTimeDeltaVsDriver(hypothetical: viewModel.hypotheticalStints ?? []),
+            actual: viewModel.stintsForComparisonDriver,
+            hypothetical: viewModel.hypotheticalStints ?? [],
+            trackEvolutionModel: viewModel.trackEvolutionModel,
+            selectedDriverNumber: viewModel.selectedDriverNumber,
+            medianLapTime: viewModel.medianLapTime(for: (viewModel.comparisonDriverNumber ?? viewModel.selectedDriverNumber) ?? 0) ?? 0.0,
+            annotatedLaps: viewModel.annotatedLaps(for: (viewModel.comparisonDriverNumber ?? viewModel.selectedDriverNumber) ?? 0),
+            sessionName: "\(viewModel.session.circuitShortName) Grand Prix"
+        )
+    }
+    var exportFilename: String { "SpeedTrace-\(viewModel.session.circuitShortName)" }
 }

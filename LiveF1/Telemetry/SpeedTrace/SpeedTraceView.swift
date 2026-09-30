@@ -26,65 +26,12 @@ struct SpeedTraceView: View {
             } else if let error = viewModel.error {
                 Text(error).foregroundStyle(.red)
             } else {
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 16) {
-                        Text("Speed").font(.caption).foregroundStyle(.secondary)
-                        Chart(viewModel.samples) {
-                            LineMark(x: .value("Elapsed", $0.elapsed), y: .value("Speed", $0.speed ?? 0))
-                                .foregroundStyle(by: .value("Lap", $0.label))
-                                .interpolationMethod(.catmullRom)
-                        }
-                        .frame(height: 160)
-                        .chartScrollableAxes(.horizontal)
-                        .chartXVisibleDomain(length: zoom)
-                        .chartScrollPosition(x: $scrollPosition)
-
-                        Text("Throttle").font(.caption).foregroundStyle(.secondary)
-                        Chart(viewModel.samples) {
-                            LineMark(x: .value("Elapsed", $0.elapsed), y: .value("Throttle", $0.throttle ?? 0))
-                                .foregroundStyle(by: .value("Lap", $0.label))
-                        }
-                        .frame(height: 90)
-                        .chartScrollableAxes(.horizontal)
-                        .chartXVisibleDomain(length: zoom)
-                        .chartScrollPosition(x: $scrollPosition)
-
-                        Text("Brake").font(.caption).foregroundStyle(.secondary)
-                        Chart(viewModel.samples) {
-                            LineMark(x: .value("Elapsed", $0.elapsed), y: .value("Brake", $0.brake ?? 0))
-                                .foregroundStyle(by: .value("Lap", $0.label))
-                        }
-                        .frame(height: 60)
-                        .chartScrollableAxes(.horizontal)
-                        .chartXVisibleDomain(length: zoom)
-                        .chartScrollPosition(x: $scrollPosition)
-                        
-                        Text("Gear").font(.caption).foregroundStyle(.secondary)
-                        Chart(viewModel.samples) {
-                            LineMark(x: .value("Elapsed", $0.elapsed), y: .value("Gear", $0.gear ?? 0))
-                                .foregroundStyle(by: .value("Lap", $0.label))
-                        }
-                        .frame(height: 90)
-                        .chartScrollableAxes(.horizontal)
-                        .chartXVisibleDomain(length: zoom)
-                        .chartScrollPosition(x: $scrollPosition)
-                        
-                        Text("Delta").font(.caption).foregroundStyle(.secondary)
-                        Chart(viewModel.deltaSamples) {
-                            LineMark(x: .value("Distance", $0.refElapsed ?? 0), y: .value("Delta", $0.delta ?? 0))
-                                .foregroundStyle(by: .value("Lap", $0.label))
-                        }
-                        .frame(height: 90)
-                        .chartScrollableAxes(.horizontal)
-                        .chartXVisibleDomain(length: zoom)
-                        .chartScrollPosition(x: $scrollPosition)
-
-                        // Simplest possible zoom control: a slider
-                        Slider(value: $zoom, in: 1...(viewModel.samples.map(\.elapsed).max() ?? 60))
-                        Text("Zoom: \(Int(zoom))s window").font(.caption2).foregroundStyle(.secondary)
-                    }
-                    .padding()
-                }
+                SpeedTraceChartsView(samples: viewModel.samples, deltaSamples: viewModel.deltaSamples)
+            }
+        }
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                ExportMenu(source: self)
             }
         }
         .navigationTitle(laps.count == 1 ? "Lap \(laps[0].lapNumber) · #\(laps[0].driverNumber)" : "\(laps.count) Laps")
@@ -93,4 +40,85 @@ struct SpeedTraceView: View {
             zoom = viewModel.samples.map(\.elapsed).max() ?? 30
         }
     }
+}
+
+struct SpeedTraceChartsView: View {
+    let samples: [SpeedTraceSample]
+    let deltaSamples: [SpeedTraceSample]
+    @State var zoom: Double = 30
+    @State private var scrollPosition: Double = 0
+    
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                Text("Speed").font(.caption).foregroundStyle(.secondary)
+                Chart(samples) {
+                    LineMark(x: .value("Elapsed", $0.elapsed), y: .value("Speed", $0.speed ?? 0))
+                        .foregroundStyle(by: .value("Lap", $0.label))
+                        .interpolationMethod(.catmullRom)
+                }
+                .frame(height: 160)
+                .chartScrollableAxes(.horizontal)
+                .chartXVisibleDomain(length: zoom)
+                .chartScrollPosition(x: $scrollPosition)
+
+                Text("Throttle").font(.caption).foregroundStyle(.secondary)
+                Chart(samples) {
+                    LineMark(x: .value("Elapsed", $0.elapsed), y: .value("Throttle", $0.throttle ?? 0))
+                        .foregroundStyle(by: .value("Lap", $0.label))
+                }
+                .frame(height: 90)
+                .chartScrollableAxes(.horizontal)
+                .chartXVisibleDomain(length: zoom)
+                .chartScrollPosition(x: $scrollPosition)
+
+                Text("Brake").font(.caption).foregroundStyle(.secondary)
+                Chart(samples) {
+                    LineMark(x: .value("Elapsed", $0.elapsed), y: .value("Brake", $0.brake ?? 0))
+                        .foregroundStyle(by: .value("Lap", $0.label))
+                }
+                .frame(height: 60)
+                .chartScrollableAxes(.horizontal)
+                .chartXVisibleDomain(length: zoom)
+                .chartScrollPosition(x: $scrollPosition)
+                
+                Text("Gear").font(.caption).foregroundStyle(.secondary)
+                Chart(samples) {
+                    LineMark(x: .value("Elapsed", $0.elapsed), y: .value("Gear", $0.gear ?? 0))
+                        .foregroundStyle(by: .value("Lap", $0.label))
+                }
+                .frame(height: 90)
+                .chartScrollableAxes(.horizontal)
+                .chartXVisibleDomain(length: zoom)
+                .chartScrollPosition(x: $scrollPosition)
+                
+                Text("Delta").font(.caption).foregroundStyle(.secondary)
+                Chart(deltaSamples) {
+                    LineMark(x: .value("Distance", $0.refElapsed ?? 0), y: .value("Delta", $0.delta ?? 0))
+                        .foregroundStyle(by: .value("Lap", $0.label))
+                }
+                .frame(height: 90)
+                .chartScrollableAxes(.horizontal)
+                .chartXVisibleDomain(length: zoom)
+                .chartScrollPosition(x: $scrollPosition)
+
+                // Simplest possible zoom control: a slider
+                Slider(value: $zoom, in: 1...(samples.map(\.elapsed).max() ?? 60))
+                Text("Zoom: \(Int(zoom))s window").font(.caption2).foregroundStyle(.secondary)
+            }
+            .padding()
+        }
+    }
+}
+
+
+extension SpeedTraceView: Exportable {
+    var exportContent: some View {
+        SpeedTraceExportLayout(
+            samples: viewModel.samples,
+            deltaSamples: viewModel.deltaSamples,
+            sessionName: "\(viewModel.session.circuitShortName) Grand Prix"
+        )
+    }
+    var exportFilename: String { "SpeedTrace-\(viewModel.session.circuitShortName)" }
 }

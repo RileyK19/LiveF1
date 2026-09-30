@@ -311,9 +311,19 @@ struct StrategyResultCard: View {
             Divider()
 
             TabView(selection: $page) {
-                stintComparisonPage
+//                stintComparisonPage
+                StintComparisonPage(actual: actual, hypothetical: hypothetical)
                     .tag(0)
-                deltaChartPage
+//                deltaChartPage
+                DeltaChartPage(
+                    timeDelta: timeDelta,
+                    trackEvolutionModel: viewModel.trackEvolutionModel,
+                    selectedDriverNumber: viewModel.selectedDriverNumber,
+                    actual: actual,
+                    hypothetical: hypothetical,
+                    medianLapTime: viewModel.medianLapTime(for: (comparisonDriverNumber ?? viewModel.selectedDriverNumber) ?? 0) ?? 0.0,
+                    annotatedLaps: viewModel.annotatedLaps(for: (comparisonDriverNumber ?? viewModel.selectedDriverNumber) ?? 0)
+                )
                     .id(comparisonDriverNumber)
                     .tag(1)
             }
@@ -339,8 +349,20 @@ struct StrategyResultCard: View {
             comparisonDelta = viewModel.calculateTimeDeltaVsDriver(hypothetical: hypothetical, against: newValue)
         }
     }
+}
 
-    // MARK: - Page 1: Stint comparison
+private func formatDelta(_ seconds: Double) -> String {
+    let sign = seconds >= 0 ? "+" : ""
+    return String(format: "\(sign)%.1fs", seconds)
+}
+
+struct StintComparisonPage: View {
+    let actual: [F1PredictorStint]
+    let hypothetical: [F1PredictorStint]
+    
+    var body: some View {
+        stintComparisonPage
+    }
 
     private var stintComparisonPage: some View {
         HStack(alignment: .top, spacing: 16) {
@@ -368,8 +390,21 @@ struct StrategyResultCard: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
+}
 
-    // MARK: - Page 2: Cumulative delta chart
+struct DeltaChartPage: View {
+    @State private var comparisonDriverNumber: Int? = nil
+    let timeDelta: Double?
+    let trackEvolutionModel: TrackEvolutionCalculator.TrackEvolutionModel?
+    let selectedDriverNumber: Int?
+    let actual: [F1PredictorStint]
+    let hypothetical: [F1PredictorStint]
+    let medianLapTime: Double
+    let annotatedLaps: [AnnotatedLap]
+    
+    var body: some View {
+        deltaChartPage
+    }
 
     private var deltaChartPage: some View {
         Chart {
@@ -416,25 +451,21 @@ struct StrategyResultCard: View {
     }
 
     private var cumulativeDeltaPoints: [DeltaPoint] {
-        guard let trackModel = viewModel.trackEvolutionModel else { return [] }
-        let driver = comparisonDriverNumber ?? viewModel.selectedDriverNumber
-        guard let driver, let median = viewModel.medianLapTime(for: driver) else { return [] }
-        let baseLaps = viewModel.annotatedLaps(for: driver)
+        guard let trackModel = trackEvolutionModel else { return [] }
+//        let driver = comparisonDriverNumber ?? selectedDriverNumber
+//        guard let driver, let median = viewModel.medianLapTime(for: driver) else { return [] }
+//        let baseLaps = viewModel.annotatedLaps(for: driver)
 
         return StrategyCalculator.shared.cumulativeDeltaPoints(
             actual: actual,
             hypothetical: hypothetical,
-            median: median,
+            median: medianLapTime,
             trackModel: trackModel,
-            annotatedLaps: baseLaps
+            annotatedLaps: annotatedLaps
         )
     }
-
-    private func formatDelta(_ seconds: Double) -> String {
-        let sign = seconds >= 0 ? "+" : ""
-        return String(format: "\(sign)%.1fs", seconds)
-    }
 }
+
 
 //struct StrategyResultCard: View {
 //    let actual: [F1PredictorStint]

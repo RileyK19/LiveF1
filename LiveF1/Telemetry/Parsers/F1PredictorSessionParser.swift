@@ -77,6 +77,38 @@ struct F1PredictorSessionParser {
             }
         }
     }
+    
+    private struct SessionKeyRow: Decodable {
+        let sessionKey: Int
+        enum CodingKeys: String, CodingKey { case sessionKey = "session_key" }
+    }
+
+    @available(iOS 15, macOS 12, *)
+    static func withDataAvailability(_ sessions: [F1PredictorSession]) async -> [F1PredictorSession] {
+        guard let minKey = sessions.map(\.sessionKey).min(),
+              let url = URL(string: "https://api.openf1.org/v1/session_result?position=1&session_key%3E%3D\(minKey)")
+        else { return sessions }
+
+        var result = sessions
+        do {
+            let (data, _) = try await URLSession.shared.data(from: url)
+            let rows = try JSONDecoder().decode([SessionKeyRow].self, from: data)
+            let withData = Set(rows.map(\.sessionKey))
+            for i in result.indices {
+                result[i].hasLaps = withData.contains(result[i].sessionKey)
+            }
+        } catch {
+            print("Availability check failed: \(error)")
+            // leave hasLaps as nil (unknown) so nothing gets wrongly disabled
+        }
+        return result
+    }
+
+    @available(iOS 15, macOS 12, *)
+    static func fetchRacesWithLaps(year: Int = 2026, sessionType: String? = "Race") async throws -> [F1PredictorSession] {
+        let sessions = try await fetchRaces(year: year, sessionType: sessionType)
+        return await withDataAvailability(sessions)
+    }
 
     enum ParseError: LocalizedError {
         case invalidEncoding

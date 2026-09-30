@@ -37,6 +37,7 @@ struct SessionPickerView: View {
 
     private var filteredSessions: [F1PredictorSession] {
         viewModel.sessions
+//            .filter { $0.hasLaps }
             .filter { selectedSessionTypes.isEmpty || selectedSessionTypes.contains($0.sessionName) }
             .filter { searchText.isEmpty ||
                 $0.countryName.localizedCaseInsensitiveContains(searchText) ||
@@ -109,11 +110,14 @@ struct SessionPickerView: View {
                         List(filteredSessions) { session in
 //                            NavigationLink(destination: destination(session)) {
                             Button {
-                                route(session)
+                                if session.hasLaps {
+                                    route(session)
+                                }
                             } label: {
-                                SessionRowView(session: session)
+                                SessionRowView(session: session, disabled: !session.hasLaps)
                             }
                             .buttonStyle(.plain)
+                            .disabled(!session.hasLaps)
                         }
                         .listStyle(.insetGrouped)
                     }
@@ -128,6 +132,7 @@ struct SessionPickerView: View {
 
 struct SessionRowView: View {
     let session: F1PredictorSession
+    var disabled: Bool = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -143,9 +148,21 @@ struct SessionRowView: View {
                     .foregroundStyle(sessionColor)
                     .clipShape(Capsule())
             }
-            Text(session.circuitShortName)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
+            HStack {
+                Text(session.circuitShortName)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                if disabled {
+                    Spacer()
+                    Text(session.dateStart ?? .now >= .now ? "In future" : session.isCancelled ? "Cancelled" : "Unavailable")
+                        .font(.caption2.weight(.semibold))
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 3)
+                        .background(.secondary.opacity(0.15))
+                        .foregroundStyle(.secondary)
+                        .clipShape(Capsule())
+                }
+            }
             if let date = session.dateStart {
                 Text(date.formatted(date: .abbreviated, time: .omitted))
                     .font(.caption)
@@ -153,6 +170,7 @@ struct SessionRowView: View {
             }
         }
         .padding(.vertical, 4)
+        .opacity(disabled ? 0.4 : 1)
     }
 
     private var sessionColor: Color {

@@ -49,9 +49,17 @@ struct LapTimeChartView: View {
 
                     // Swipeable chart
                     TabView(selection: $currentPage) {
-                        rawChartPage
+                        LapTimeRawChartView(
+                            annotatedLaps: viewModel.annotatedLaps,
+                            stintRegressionLines: viewModel.stintRegressionLines,
+                            rawLapTimeRange: rawLapTimeRange
+                        )
                             .tag(ChartPage.raw)
-                        adjustedChartPage
+                        LapTimeAdjustedChartView(
+                            adjustedAnnotatedLaps: viewModel.adjustedAnnotatedLaps,
+                            adjustedStintRegressionLines: viewModel.adjustedStintRegressionLines,
+                            adjustedLapTimeRange: adjustedLapTimeRange
+                        )
                             .tag(ChartPage.adjusted)
                     }
                     .tabViewStyle(.page(indexDisplayMode: .automatic))
@@ -62,10 +70,10 @@ struct LapTimeChartView: View {
                         UIPageControl.appearance().pageIndicatorTintColor = UIColor.label.withAlphaComponent(0.2)
                     }
 
-                    compoundLegend
+                    LapTimeCompoundLegend(usedCompounds: usedCompounds)
                         .padding(.horizontal)
 
-                    stintSummary
+                    LapTimeStintSummary(stintsForSelectedDriver: viewModel.stintsForSelectedDriver)
                         .padding(.horizontal)
                 }
                 .padding(.vertical)
@@ -73,11 +81,66 @@ struct LapTimeChartView: View {
         }
     }
 
-    // MARK: - Raw page
+    // MARK: - Y axis ranges
 
+    private var rawLapTimeRange: ClosedRange<Double> {
+        let durations = viewModel.annotatedLaps.map { $0.lapDuration }
+        guard !durations.isEmpty else { return 60...120 }
+        let sorted = durations.sorted()
+        let trimIndex = max(0, Int(Double(sorted.count) * 0.85))
+        let trimmed = Array(sorted.prefix(trimIndex + 1))
+        let min = (trimmed.min() ?? 60) - 0.5
+        let max = (trimmed.max() ?? 120) + 0.5
+        return min...max
+    }
+
+    private var adjustedLapTimeRange: ClosedRange<Double> {
+        let deltas = viewModel.adjustedAnnotatedLaps.map { $0.lapDuration }
+        guard !deltas.isEmpty else { return -5...5 }
+        let sorted = deltas.sorted()
+        let trimIndex = max(0, Int(Double(sorted.count) * 0.85))
+        let trimmed = Array(sorted.prefix(trimIndex + 1))
+        let min = (trimmed.min() ?? -5) - 0.5
+        let max = (trimmed.max() ?? 5) + 0.5
+        return min...max
+    }
+
+    // MARK: - Helpers
+
+    private var usedCompounds: [TyreCompound] {
+        Array(Set(viewModel.annotatedLaps.map { $0.compound }))
+            .sorted { $0.rawValue < $1.rawValue }
+    }
+}
+
+
+private func formatLapTime(_ seconds: Double) -> String {
+    let m = Int(seconds) / 60
+    let s = seconds.truncatingRemainder(dividingBy: 60)
+    return String(format: "%d:%05.2f", m, s)
+}
+
+private func formatDelta(_ seconds: Double) -> String {
+    let sign = seconds >= 0 ? "+" : ""
+    return String(format: "\(sign)%.2fs", seconds)
+}
+
+struct LapTimeRawChartView: View {
+    let annotatedLaps: [AnnotatedLap]
+    let stintRegressionLines: [(
+        stint: F1PredictorStint,
+         model: DegradationModel,
+         laps: [AnnotatedLap]
+    )]
+    let rawLapTimeRange: ClosedRange<Double>
+    
+    var body: some View {
+        rawChartPage
+    }
+    
     private var rawChartPage: some View {
         Chart {
-            ForEach(viewModel.annotatedLaps) { annotated in
+            ForEach(annotatedLaps) { annotated in
                 LineMark(
                     x: .value("Lap", annotated.lap.lapNumber),
                     y: .value("Time", annotated.lapDuration),
@@ -113,8 +176,42 @@ struct LapTimeChartView: View {
         }
         .padding(.horizontal)
     }
+    
+    @ChartContentBuilder
+    private var rawRegressionLines: some ChartContent {
+        ForEach(stintRegressionLines, id: \.stint.id) { entry in
+            let minAge = entry.laps.map { $0.tyreAge }.min() ?? 0
+            let maxAge = entry.laps.map { $0.tyreAge }.max() ?? 0
+            let minLap = entry.laps.map { $0.lap.lapNumber }.min() ?? 0
+            let points: [(lap: Int, time: Double)] = (minAge...maxAge).map { age in
+                (lap: minLap + (age - minAge),
+                 time: entry.model.predictedLapTime(atTyreAge: age))
+            }
+            ForEach(points, id: \.lap) { point in
+                LineMark(
+                    x: .value("Lap", point.lap),
+                    y: .value("Time", point.time),
+                    series: .value("Reg", "reg-\(entry.stint.id)")
+                )
+                .foregroundStyle(Color(hex: entry.stint.compoundEnum.darkColor).opacity(0.8))
+                .lineStyle(StrokeStyle(lineWidth: 3, dash: [5, 3]))
+            }
+        }
+    }
+}
 
-    // MARK: - Adjusted page
+struct LapTimeAdjustedChartView: View {
+    let adjustedAnnotatedLaps: [AnnotatedLap]
+    let adjustedStintRegressionLines: [(
+        stint: F1PredictorStint,
+        model: DegradationModel,
+        laps: [AnnotatedLap]
+    )]
+    let adjustedLapTimeRange: ClosedRange<Double>
+    
+    var body: some View {
+        adjustedChartPage
+    }
 
     private var adjustedChartPage: some View {
         Chart {
@@ -128,7 +225,7 @@ struct LapTimeChartView: View {
                         .foregroundStyle(.secondary)
                 }
 
-            ForEach(viewModel.adjustedAnnotatedLaps) { annotated in
+            ForEach(adjustedAnnotatedLaps) { annotated in
                 PointMark(
                     x: .value("Lap", annotated.lap.lapNumber),
                     y: .value("Delta", annotated.lapDuration)
@@ -158,33 +255,9 @@ struct LapTimeChartView: View {
         .padding(.horizontal)
     }
 
-    // MARK: - Regression lines
-
-    @ChartContentBuilder
-    private var rawRegressionLines: some ChartContent {
-        ForEach(viewModel.stintRegressionLines, id: \.stint.id) { entry in
-            let minAge = entry.laps.map { $0.tyreAge }.min() ?? 0
-            let maxAge = entry.laps.map { $0.tyreAge }.max() ?? 0
-            let minLap = entry.laps.map { $0.lap.lapNumber }.min() ?? 0
-            let points: [(lap: Int, time: Double)] = (minAge...maxAge).map { age in
-                (lap: minLap + (age - minAge),
-                 time: entry.model.predictedLapTime(atTyreAge: age))
-            }
-            ForEach(points, id: \.lap) { point in
-                LineMark(
-                    x: .value("Lap", point.lap),
-                    y: .value("Time", point.time),
-                    series: .value("Reg", "reg-\(entry.stint.id)")
-                )
-                .foregroundStyle(Color(hex: entry.stint.compoundEnum.darkColor).opacity(0.8))
-                .lineStyle(StrokeStyle(lineWidth: 3, dash: [5, 3]))
-            }
-        }
-    }
-
     @ChartContentBuilder
     private var adjustedRegressionLines: some ChartContent {
-        ForEach(viewModel.adjustedStintRegressionLines, id: \.stint.id) { entry in
+        ForEach(adjustedStintRegressionLines, id: \.stint.id) { entry in
             let minAge = entry.laps.map { $0.tyreAge }.min() ?? 0
             let maxAge = entry.laps.map { $0.tyreAge }.max() ?? 0
             let minLap = entry.laps.map { $0.lap.lapNumber }.min() ?? 0
@@ -203,32 +276,14 @@ struct LapTimeChartView: View {
             }
         }
     }
+}
 
-    // MARK: - Y axis ranges
-
-    private var rawLapTimeRange: ClosedRange<Double> {
-        let durations = viewModel.annotatedLaps.map { $0.lapDuration }
-        guard !durations.isEmpty else { return 60...120 }
-        let sorted = durations.sorted()
-        let trimIndex = max(0, Int(Double(sorted.count) * 0.85))
-        let trimmed = Array(sorted.prefix(trimIndex + 1))
-        let min = (trimmed.min() ?? 60) - 0.5
-        let max = (trimmed.max() ?? 120) + 0.5
-        return min...max
+struct LapTimeCompoundLegend: View {
+    let usedCompounds: [TyreCompound]
+    
+    var body: some View{
+        compoundLegend
     }
-
-    private var adjustedLapTimeRange: ClosedRange<Double> {
-        let deltas = viewModel.adjustedAnnotatedLaps.map { $0.lapDuration }
-        guard !deltas.isEmpty else { return -5...5 }
-        let sorted = deltas.sorted()
-        let trimIndex = max(0, Int(Double(sorted.count) * 0.85))
-        let trimmed = Array(sorted.prefix(trimIndex + 1))
-        let min = (trimmed.min() ?? -5) - 0.5
-        let max = (trimmed.max() ?? 5) + 0.5
-        return min...max
-    }
-
-    // MARK: - Supporting views
 
     private var compoundLegend: some View {
         HStack(spacing: 16) {
@@ -244,12 +299,20 @@ struct LapTimeChartView: View {
             }
         }
     }
+}
 
+struct LapTimeStintSummary: View {
+    let stintsForSelectedDriver: [F1PredictorStint]
+    
+    var body: some View {
+        stintSummary
+    }
+    
     private var stintSummary: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Stints")
                 .font(.headline)
-            ForEach(viewModel.stintsForSelectedDriver) { stint in
+            ForEach(stintsForSelectedDriver) { stint in
                 HStack {
                     Circle()
                         .fill(Color(hex: stint.compoundEnum.color))
@@ -268,23 +331,5 @@ struct LapTimeChartView: View {
                 }
             }
         }
-    }
-
-    // MARK: - Helpers
-
-    private var usedCompounds: [TyreCompound] {
-        Array(Set(viewModel.annotatedLaps.map { $0.compound }))
-            .sorted { $0.rawValue < $1.rawValue }
-    }
-
-    private func formatLapTime(_ seconds: Double) -> String {
-        let m = Int(seconds) / 60
-        let s = seconds.truncatingRemainder(dividingBy: 60)
-        return String(format: "%d:%05.2f", m, s)
-    }
-
-    private func formatDelta(_ seconds: Double) -> String {
-        let sign = seconds >= 0 ? "+" : ""
-        return String(format: "\(sign)%.2fs", seconds)
     }
 }

@@ -27,7 +27,7 @@ class SessionPickerViewModel: ObservableObject {
         isLoading = true
         error = nil
         do {
-            let fetched = try await F1PredictorSessionParser.fetchRaces(year: 2026, sessionType: sessionType)
+            let fetched = try await F1PredictorSessionParser.fetchRacesWithLaps(year: 2026, sessionType: sessionType)
             sessions = fetched.sortedByDate
         } catch {
             self.error = error.localizedDescription

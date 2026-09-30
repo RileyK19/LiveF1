@@ -8,7 +8,7 @@
 import Foundation
 import SwiftUI
 
-private var isDebugTagEnabled = false //toggle
+private var isDebugTagEnabled = true //toggle
 
 func print(
     _ items: Any...,

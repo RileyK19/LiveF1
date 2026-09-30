@@ -43,4 +43,7 @@ final class CurrentSessionStore: ObservableObject, Hashable {
         return vm
     }
     
+    func printDrivers() {
+        print(raceViewModel?.drivers)
+    }
 }
