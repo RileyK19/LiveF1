@@ -43,11 +43,10 @@ struct ChampionshipStandingsView: View {
             }
             .navigationTitle("Results")
             .toolbar {
-                if selectedTab == 0 {
-                    ToolbarItem(placement: .topBarTrailing) {
-                        ExportMenu(source: self)
-                    }
-                }
+//                if selectedTab == 0 {
+//                    ToolbarItem(placement: .topBarTrailing) {
+//                        ExportMenu(source: self)
+//                    }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     if store.isLoadingStandings {
                         ProgressView()
@@ -64,21 +63,21 @@ struct ChampionshipStandingsView: View {
     }
 }
 
-extension ChampionshipStandingsView: Exportable {
-    @ViewBuilder
-    var exportContent: some View {
-        if selectedTab == 0 {
-            RaceResultsExportLayout(
-                raceName: store.races.first { $0.round == selectedRound }?.raceName ?? "Race",
-                results: store.raceResults
-            )
-        } else {
-            Text("Not available")
-        }
-    }
-
-    var exportFilename: String { "RaceResults-\(selectedRound ?? "latest")" }
-}
+//extension ChampionshipStandingsView: Exportable {
+//    @ViewBuilder
+//    var exportContent: some View {
+//        if selectedTab == 0 {
+//            RaceResultsExportLayout(
+//                raceName: store.races.first { $0.round == selectedRound }?.raceName ?? "Race",
+//                results: store.raceResults
+//            )
+//        } else {
+//            Text("Not available")
+//        }
+//    }
+//
+//    var exportFilename: String { "RaceResults-\(selectedRound ?? "latest")" }
+//}
 
 
 // MARK: - Driver Standings Tab

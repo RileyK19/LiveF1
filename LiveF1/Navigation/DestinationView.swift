@@ -147,6 +147,9 @@ struct DestinationView: View {
                 .environment(store)
                 .environmentObject(VM)
                 .environmentObject(docStore)
+        case .raceResults(let session, let store):
+            ChampionshipResultsView(session: session)
+                .environment(store)
         }
     }
 }

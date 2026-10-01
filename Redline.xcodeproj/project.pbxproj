@@ -86,6 +86,7 @@
 				ChampionshipInfo/ChampionshipTrackColors.swift,
 				ChampionshipInfo/ChampionshipTrackView.swift,
 				ChampionshipInfo/SessionNotificationManager.swift,
+				ChampionshipInfo/Views/ChampionshipPickerSessionView.swift,
 				ChampionshipInfo/Views/ChampionshipScheduleView.swift,
 				ChampionshipInfo/Views/RaceStoryView.swift,
 				ChampionshipInfo/Views/SeasonStoryView.swift,
@@ -119,6 +120,7 @@
 				LiveTiming/Models/ColorHelper.swift,
 				LiveTiming/Models/Driver.swift,
 				Menus/SpoilerWarningView.swift,
+				Telemetry/SessionPicker/SessionPickerContent.swift,
 			);
 			target = 58CA574E2FF7813A00772EAB /* RedlineWidgetExtension */;
 		};
@@ -537,7 +539,7 @@
 				CODE_SIGN_ENTITLEMENTS = LiveF1/LiveF1.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 14;
+				CURRENT_PROJECT_VERSION = 15;
 				DEVELOPMENT_TEAM = TMN6MFG35F;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -581,7 +583,7 @@
 				CODE_SIGN_ENTITLEMENTS = LiveF1/LiveF1.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 14;
+				CURRENT_PROJECT_VERSION = 15;
 				DEVELOPMENT_TEAM = TMN6MFG35F;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;

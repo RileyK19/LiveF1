@@ -288,10 +288,34 @@ struct ChampionshipRaceResult: Codable, Identifiable {
         case constructor = "Constructor"
     }
 
-    // Convenience accessors so existing call sites (driverName / constructorName) still work
     var driverName: String { driver.fullName }
     var constructorName: String { constructor.name }
 
+    var teamColor: String {
+        return constrToColor(constructor.constructorId)
+    }
+}
+ 
+struct ChampionshipQualifyingResult: Codable, Identifiable {
+    var id: String { driver.driverId }
+    let number: String
+    let position: String
+    let driver: ChampionshipDriver
+    let constructor: ChampionshipConstructor
+    let q1: String?
+    let q2: String?
+    let q3: String?
+ 
+    enum CodingKeys: String, CodingKey {
+        case number, position
+        case driver = "Driver"
+        case constructor = "Constructor"
+        case q1 = "Q1", q2 = "Q2", q3 = "Q3"
+    }
+
+    var driverName: String { driver.fullName }
+    var constructorName: String { constructor.name }
+    
     var teamColor: String {
         return constrToColor(constructor.constructorId)
     }

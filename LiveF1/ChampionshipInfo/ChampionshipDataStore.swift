@@ -18,6 +18,7 @@ final class ChampionshipDataStore: Observable, ObservableObject, Equatable, Hash
     @Published var driverStandings: [ChampionshipDriverStanding] = []
     @Published var constructorStandings: [ChampionshipConstructorStanding] = []
     @Published var raceResults: [ChampionshipRaceResult] = []
+    @Published var qualifyingResults: [ChampionshipQualifyingResult] = []
     @Published var isLoadingSchedule = false
     @Published var isLoadingStandings = false
     @Published var error: String?
@@ -351,6 +352,83 @@ final class ChampionshipDataStore: Observable, ObservableObject, Equatable, Hash
         [CacheKey.schedule, CacheKey.driverStandings,
          CacheKey.constructorStandings, CacheKey.lastUpdated].forEach {
             defaults.removeObject(forKey: $0)
+        }
+    }
+ 
+    /// Unified fetch for race / sprint / qualifying results, replacing the
+    /// race-only fetchRaceResults for anything driven by ChampionshipSessionPickerView.
+    func fetchSessionResults(
+        round: String,
+        kind: ChampionshipPickerSession.ResultsKind,
+        forceRefresh: Bool = false
+    ) async {
+        switch kind {
+        case .race, .sprint:
+            let path = kind == .race ? "results" : "sprint"
+            let resultsKey = kind == .race ? "Results" : "SprintResults"
+            await fetchStandardResults(round: round, path: path, resultsKey: resultsKey, forceRefresh: forceRefresh)
+        case .qualifying:
+            await fetchQualifyingResults(round: round, forceRefresh: forceRefresh)
+        }
+    }
+ 
+    private func fetchStandardResults(
+        round: String, path: String, resultsKey: String, forceRefresh: Bool
+    ) async {
+        let cacheKey = "f1_cache_\(path)_\(round)"
+        if !forceRefresh, let cached: [ChampionshipRaceResult] = loadCache(key: cacheKey) {
+            self.raceResults = cached
+            return
+        }
+        guard let url = URL(string: "\(base)/\(season)/\(round)/\(path).json") else {
+            self.error = "\(path) results: invalid URL for round \(round)"
+            return
+        }
+        do {
+            let (data, _) = try await URLSession.shared.data(from: url)
+            let json = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+            let mrData = json?["MRData"] as? [String: Any]
+            let raceTable = mrData?["RaceTable"] as? [String: Any]
+            let races = raceTable?["Races"] as? [[String: Any]]
+            let resultsArray = races?.first?[resultsKey] as? [[String: Any]] ?? []
+            let results = try resultsArray.map { obj -> ChampionshipRaceResult in
+                let itemData = try JSONSerialization.data(withJSONObject: obj)
+                return try JSONDecoder().decode(ChampionshipRaceResult.self, from: itemData)
+            }
+            self.raceResults = results
+            saveCache(results, key: cacheKey)
+            updateLastUpdated()
+        } catch {
+            self.error = "\(path) results: \(error.localizedDescription)"
+        }
+    }
+ 
+    private func fetchQualifyingResults(round: String, forceRefresh: Bool) async {
+        let cacheKey = "f1_cache_qualifying_\(round)"
+        if !forceRefresh, let cached: [ChampionshipQualifyingResult] = loadCache(key: cacheKey) {
+            self.qualifyingResults = cached
+            return
+        }
+        guard let url = URL(string: "\(base)/\(season)/\(round)/qualifying.json") else {
+            self.error = "Qualifying results: invalid URL for round \(round)"
+            return
+        }
+        do {
+            let (data, _) = try await URLSession.shared.data(from: url)
+            let json = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+            let mrData = json?["MRData"] as? [String: Any]
+            let raceTable = mrData?["RaceTable"] as? [String: Any]
+            let races = raceTable?["Races"] as? [[String: Any]]
+            let resultsArray = races?.first?["QualifyingResults"] as? [[String: Any]] ?? []
+            let results = try resultsArray.map { obj -> ChampionshipQualifyingResult in
+                let itemData = try JSONSerialization.data(withJSONObject: obj)
+                return try JSONDecoder().decode(ChampionshipQualifyingResult.self, from: itemData)
+            }
+            self.qualifyingResults = results
+            saveCache(results, key: cacheKey)
+            updateLastUpdated()
+        } catch {
+            self.error = "Qualifying results: \(error.localizedDescription)"
         }
     }
 }
