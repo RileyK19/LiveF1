@@ -12,6 +12,8 @@ struct DriverRow: View {
 
     let driver: Driver
     let isLeader: Bool
+    var pit: PitPrediction? = nil
+    var showPitPredictions: Bool
 
     var body: some View {
         HStack(spacing: 4) {
@@ -53,6 +55,13 @@ struct DriverRow: View {
                 TyreBadge(compound: driver.compound, age: driver.tyreAge)
             }
             .frame(width: 52, alignment: .center)
+
+            if showPitPredictions {
+                PitChip(prediction: pit)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+                    .frame(width: 150, alignment: .leading)
+            }
         }
         .font(.system(.caption, design: .monospaced))
         .padding(.horizontal, 12)

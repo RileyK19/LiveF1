@@ -15,10 +15,14 @@ struct TimingTowerView: View {
     
 //    @State private var radioToast: RadioMessage?
     @State private var toastTimer: Timer?
+    
+    private var showPitPredictions: Bool {
+        !store.pitPredictions.isEmpty
+    }
 
     var body: some View {
         let drivers = store.drivers
-        let _ = print("🎨 rendering: \(drivers.count) drivers, updateCount: \(store.updateCount)")
+        // let _ = print("🎨 rendering: \(drivers.count) drivers, updateCount: \(store.updateCount)")
         return VStack(spacing: 0) {
             SessionBanner(store: store)
             Divider().opacity(0.2)
@@ -30,12 +34,16 @@ struct TimingTowerView: View {
             ScrollView {
                 ScrollView(.horizontal, showsIndicators: false) {
                     VStack(spacing: 0) {
-                        HeaderRow()
+                        HeaderRow(showPitPredictions: showPitPredictions)
                         ForEach(drivers) { driver in
                             Button {
                                 selectedDriver = driver
                             } label: {
-                                DriverRow(driver: driver, isLeader: driver.position == 1)
+                                DriverRow(driver: driver,
+                                          isLeader: driver.position == 1,
+                                          pit: store.pitPredictions[driver.id],
+                                          showPitPredictions: showPitPredictions
+                                )
                             }
                             .buttonStyle(.plain)
                             Divider().opacity(0.2)

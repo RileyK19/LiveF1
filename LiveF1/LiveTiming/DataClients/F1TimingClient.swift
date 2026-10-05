@@ -28,7 +28,8 @@ class F1TimingClient: NSObject, F1DataSource, ObservableObject {
         "Heartbeat", "CarData.z", "Position.z", "ExtrapolatedClock",
         "TopThree", "TimingStats", "TimingAppData", "WeatherData",
         "TrackStatus", "DriverList", "RaceControlMessages",
-        "SessionInfo", "SessionData", "LapCount", "TimingData", "TeamRadio"
+        "SessionInfo", "SessionData", "LapCount", "TimingData", "TeamRadio",
+        "SessionStatus"
     ]
 
     override init() {

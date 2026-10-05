@@ -35,10 +35,15 @@ final class LiveActivityManager {
             leaderTLA: "—", leaderGap: "", p2TLA: "—", p2Gap: "",
             p3TLA: "—", p3Gap: "", trackStatus: "", lapCount: ""
         )
-        activity = try? Activity.request(
-            attributes: attrs,
-            content: .init(state: initialState, staleDate: nil)
-        )
+        do {
+            activity = try Activity.request(
+                attributes: attrs,
+                content: .init(state: initialState, staleDate: nil)
+            )
+            print("✅ Activity started: \(activity?.id ?? "nil")")
+        } catch {
+            print("❌ Activity.request failed: \(error)")
+        }
         lastUpdateAt = .distantPast
         lastPushedState = nil
         pendingState = nil

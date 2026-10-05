@@ -11,6 +11,7 @@ import SwiftUI
 
 struct HeaderRow: View {
     @AppStorage("isDark") private var isDark = false
+    var showPitPredictions: Bool
     
     var body: some View {
         HStack(spacing: 4) {
@@ -21,6 +22,9 @@ struct HeaderRow: View {
             Text("Gap").frame(width: 60, alignment: .trailing)
             Text("Sectors").frame(width: 150, alignment: .leading)
             Text("Tyre").frame(width: 52, alignment: .center)
+            if showPitPredictions {
+                Text("PIT").frame(width: 150, alignment: .leading)
+            }
         }
         .font(.system(.caption2, design: .monospaced).bold())
         .foregroundStyle(.gray)

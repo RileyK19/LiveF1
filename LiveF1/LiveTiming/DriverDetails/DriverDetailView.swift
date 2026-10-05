@@ -65,6 +65,14 @@ struct DriverDetailView: View {
                 .padding()
                 .background(isDark ? Color.white.opacity(0.05) : Color.black.opacity(0.05))
                 .cornerRadius(12)
+                
+                if store.pitPredictions[driver.id] != nil {
+                    HStack { Text("Pit").font(.caption).foregroundStyle(.secondary); Spacer()
+                        PitChip(prediction: store.pitPredictions[driver.id]) }
+                    .padding()
+                    .background(isDark ? Color.white.opacity(0.05) : Color.black.opacity(0.05))
+                    .cornerRadius(12)
+                }
 
                 if let t = telemetry {
                     LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {

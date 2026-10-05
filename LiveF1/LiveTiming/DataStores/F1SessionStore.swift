@@ -46,6 +46,9 @@ class F1SessionStore: ObservableObject, Hashable {
     
     private var whisperPipe: WhisperKit?
     
+    @Published var pitPredictions: [String: PitPrediction] = [:]
+    private let pitEngine = PitEngine()
+    
     static func == (lhs: F1SessionStore, rhs: F1SessionStore) -> Bool {
         return lhs.id == rhs.id
     }
@@ -61,17 +64,17 @@ class F1SessionStore: ObservableObject, Hashable {
                     self?.enqueue(topic: topic, payload: payload)
                 }
             }
-            dataSource?.onStateChange = { [weak self] state in
-                Task { @MainActor in
-                    self?.connectionState = state
-                    if case .connected = state {
-                        let sessionName = (self?.rawTopics["SessionInfo"] as? [String: Any])?["Name"] as? String ?? "Session"
-                        LiveActivityManager.shared.start(sessionName: sessionName)
-                    } else if case .disconnected = state {
-                        LiveActivityManager.shared.end()
-                    }
-                }
-            }
+//            dataSource?.onStateChange = { [weak self] state in
+//                Task { @MainActor in
+//                    self?.connectionState = state
+//                    if case .connected = state {
+//                        let sessionName = (self?.rawTopics["SessionInfo"] as? [String: Any])?["Name"] as? String ?? "Session"
+//                        LiveActivityManager.shared.start(sessionName: sessionName)
+//                    } else if case .disconnected = state {
+//                        LiveActivityManager.shared.end()
+//                    }
+//                }
+//            }
         }
     }
     
@@ -127,16 +130,22 @@ class F1SessionStore: ObservableObject, Hashable {
     }
     
     private func handle(topic: String, payload: [String: Any]) {
-                print("📨 \(topic)")
+        if topic != "TimingData" { print("📨 \(topic)") }
 //                if topic == "TimingData" {
 //                    print("🏁 TimingData delta: \(String(describing: payload).prefix(200))")
 //                    print("🏁 TimingData delta: \(String(describing: payload))")
 //                }
-                if topic == "TimingStats" {
-                    print("🏁 TimingStats delta: \(String(describing: payload))")
-                }
-        if topic == "TeamRadio" {
-            print("📻 TeamRadio payload: \(payload)")
+//                if topic == "TimingStats" {
+//                    print("🏁 TimingStats delta: \(String(describing: payload))")
+//                }
+//        if topic == "TeamRadio" {
+//            print("📻 TeamRadio payload: \(payload)")
+//        }
+        
+        if topic == "TimingAppData",
+           let lines = (rawTopics["TimingAppData"] as? [String: Any])?["Lines"] as? [String: Any],
+           let d = lines["1"] as? [String: Any] {
+            print("🛞 merged stints for 1: \(d["Stints"] as Any)")
         }
         
         // Deep-merge the delta into our state for this topic
@@ -154,12 +163,37 @@ class F1SessionStore: ObservableObject, Hashable {
         }
         drivers = F1TimingParser.parse(store: self)
         
-        let trackStatus = (rawTopics["TrackStatus"] as? [String: Any])?["Message"] as? String ?? ""
+        if topic == "TimingData" {
+            if pitEngine.update(rawTopics) { pitPredictions = pitEngine.predictions }
+        }
+        
+        let trackStatus = (rawTopics["TrackStatus"] as? [String: Any])?["Status"] as? String ?? ""
         let lapCount: String = {
             guard let lc = rawTopics["LapCount"] as? [String: Any],
-                  let current = lc["CurrentLap"] else { return "" }
-            return "\(current)"
+                let current = lc["CurrentLap"],
+                let total = lc["TotalLaps"]
+            else { return "" }
+            return "\(current) / \(total)"
         }()
+        
+        if topic == "SessionData", let series = payload["StatusSeries"] as? [String: Any] {
+            let ordered = series.compactMap { key, value -> (Int, String)? in
+                guard let idx = Int(key),
+                      let entry = value as? [String: Any],
+                      let status = entry["SessionStatus"] as? String else { return nil }
+                return (idx, status)
+            }.sorted { $0.0 < $1.0 }
+
+            for (_, status) in ordered {
+                if status == "Started" {
+                    let sessionName = (rawTopics["SessionInfo"] as? [String: Any])?["Name"] as? String ?? "Session"
+                    LiveActivityManager.shared.start(sessionName: sessionName)
+                } else if status == "Finished" || status == "Aborted" || status == "Ends" {
+                    LiveActivityManager.shared.end()
+                }
+            }
+        }
+        
         LiveActivityManager.shared.update(from: drivers, trackStatus: trackStatus, lapCount: lapCount)
         
         if topic == "CarData.z", let entries = payload["Entries"] as? [[String: Any]] {
@@ -213,7 +247,7 @@ class F1SessionStore: ObservableObject, Hashable {
     }
     
     private func processRadio(_ payload: [String: Any]) {
-        print("📻 processRadio called, sessionPath: \((rawTopics["SessionInfo"] as? [String: Any])?["Path"] as? String ?? "nil")")
+//        print("📻 processRadio called, sessionPath: \((rawTopics["SessionInfo"] as? [String: Any])?["Path"] as? String ?? "nil")")
         var captures: [[String: Any]] = []
         if let arr = payload["Captures"] as? [[String: Any]] {
             captures = arr

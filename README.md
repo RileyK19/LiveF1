@@ -24,6 +24,27 @@ There's no server behind this app. Every screen is powered by a direct API/WebSo
 - Team radio clips are transcribed **on-device** with WhisperKit — no audio leaves the phone
 - **Replay** mode lets you browse and replay past sessions with historical data, no login needed
 
+### Pit Stop Predictor
+- Predicts pit stop timing for every driver **live**, directly from the timing feed, with no server, no saved history, and no network calls beyond the feed itself
+- Five gradient-boosted models (XGBoost, converted to Core ML) run on-device against a single snapshot of the current timing state
+- Answers three kinds of question per driver: **will they stop again?**, **will they pit within the next 5 laps?**, and **roughly how many laps until the next stop?**
+- Shown as a relative signal (e.g. "likely soon" / "no more stops expected") rather than a precise lap number or a percentage.
+
+**Training data:** 70 races (2023-2025, about 60,000 driver-laps) via a reproducible FastF1 pipeline. The 2026 season was held out entirely and never used for training or tuning.
+
+### Pit Predictor evaluation
+
+Evaluated on **15 held-out 2026 races**, which the models never saw during training or tuning. Intervals are bootstrapped.
+
+| Question | Result | Notes |
+|---|---|---|
+| Will the driver stop again? | **ROC-AUC 0.95** (95% CI 0.91-0.98) | A simple rule-based baseline scores 0.93, so this is a solid result, not a breakthrough |
+| "No more stops" call | Correct **92.5%** of the time, catches **78%** of cases | Precision / recall on the 2026 holdout |
+| Pit within 5 laps? | **ROC-AUC 0.83** (0.78-0.87) | 2026 holdout |
+| Laps until next pit | **5.8 vs 7.4 laps** error against a typical-stint baseline (22% lower) | Validation set; beat the baseline in 11 of 14 races |
+
+The largest gains came on races where stint length is hard to guess from the track alone: Monaco 2024 (15.5 → 5.8 laps error) and Spain 2026 (10.9 → 7.0).
+
 ### Telemetry & Race Pace
 - Past-lap telemetry comparison via the OpenF1 API — speed, brake, throttle, and gear traces for any two laps, with a running delta plotted across the lap
 - Race pace box-and-whisker plots per driver/stint, also from OpenF1, for at-a-glance pace and consistency comparisons
@@ -79,6 +100,7 @@ This app leans deliberately on first-party Apple frameworks rather than reaching
 | Purpose | Framework |
 |---|---|
 | Live WebSocket connection to F1's timing feed | `URLSessionWebSocketTask` |
+| On-device pit stop prediction | `Core ML` (XGBoost models converted via coremltools) |
 | Telemetry decompression (`CarData.z`, `Position.z`) | `Compression` |
 | F1TV login + FIA document scraping | `WKWebView` |
 | On-device document summarization & strategy chat | `FoundationModels` (Apple Intelligence) |
@@ -105,6 +127,13 @@ No backend server, no database — every feature is either a direct API/WebSocke
 - `StrategyContextBuilder` packages lap, stint, and degradation data as structured natural-language model context — including the selected driver's actual stint sequence and pit laps, all other drivers' strategies for the race, and aggregated strategy templates grouped by stop count with average pit-lap windows and most common compound sequences
 - `StrategyTranslator` uses a `@Generable` structured output schema to translate natural-language strategy requests into typed `[F1PredictorStint]` arrays — the model performs no calculations, it only resolves intent into structured stint data passed to the simulation layer
 - Underlying strategy math (degradation curves, track evolution, compound/pace tradeoffs) is computed algorithmically — Foundation Models narrates and compares, it doesn't invent the numbers
+
+**On-device pit stop prediction**
+- Five gradient-boosted models converted from XGBoost to Core ML and run in real time against live timing snapshots, with no backend and no stored session history
+- **Leakage-aware evaluation:** data is split by race (never by lap), and track-level statistics are rebuilt with each training race left out so a race can't inform its own features
+- Reports bootstrapped confidence intervals and compares against simple baselines, not single accuracy numbers
+- **Export parity tests:** a float32 vs float64 input mismatch in the Core ML conversion changed up to 45% of predictions. After fixing it, Core ML output matches the Python models exactly, and tests guard against regressions
+- **Live feed vs training data check:** tyre age from the live feed matched FastF1 on 64 of 64 stints in a replay test
 
 **Headless-browser data extraction (FIA Documents)**
 - No public FIA API exists, so a hidden, off-screen `WKWebView` loads the live document portal and polls it for rendered content
@@ -158,6 +187,18 @@ F1SessionStore (@MainActor) — deep-merges deltas, queues radio transcription
 F1TimingParser (pure function) — raw payload → typed [Driver]
    ▼
 SwiftUI Views — re-render on @Published changes
+```
+
+### Pit predictor pipeline
+```
+FastF1 data (70 races, 2023-2025) → offline training (Python, XGBoost)
+   │ split by race; track stats rebuilt with each training race left out
+   ▼
+Core ML export (float32 inputs, parity-tested against Python)
+   ▼
+Live F1SessionStore snapshot → feature builder → Core ML models (on-device)
+   ▼
+Pit predictions per driver in the timing tower
 ```
 
 ### FIA document pipeline
@@ -254,6 +295,9 @@ The `current` keyword auto-resolves to the active season.
 ## What I learned building this
 
 - Reverse-engineering an undocumented SignalR Core protocol from raw network traffic, including F1's inconsistent array/dict delta merge format
+- Evaluating an ML model honestly: splitting by race, leaving out the target race when building track statistics, and benchmarking against simple rules (a basic rule hit 0.93 AUC, so 0.95 needed context)
+- Debugging Core ML conversion: float32/float64 mismatches silently changing up to 45% of predictions, and why parity tests against the original model matter
+- Knowing when extra complexity doesn't pay off: lap-time history, pace ratios and heavier regularisation didn't help, which justified keeping the feature simple, on-device, and snapshot-only
 - Driving a hidden `WKWebView` as a structured data source — polling for render completion, injecting extraction scripts, and detecting pagination dead-ends with no real API to lean on
 - Grounding Foundation Models output in real session data so summaries and strategy advice stay factual instead of hallucinating lap times or compound choices
 - Managing on-device speech transcription concurrency with a sequential task queue

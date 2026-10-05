@@ -15,7 +15,6 @@
 		58CA57952FF783CC00772EAB /* PocketSVG in Frameworks */ = {isa = PBXBuildFile; productRef = 58CA57942FF783CC00772EAB /* PocketSVG */; };
 		58D674D82FD56F1500E13D17 /* NotificationLog in Frameworks */ = {isa = PBXBuildFile; productRef = 58D674D72FD56F1500E13D17 /* NotificationLog */; };
 		58D674EA2FD56F7A00E13D17 /* .gitignore in Resources */ = {isa = PBXBuildFile; fileRef = 58D674E92FD56F7A00E13D17 /* .gitignore */; };
-		58F8119D300BDB6200B252C2 /* TODO.md in Resources */ = {isa = PBXBuildFile; fileRef = 58F8119C300BDB5E00B252C2 /* TODO.md */; };
 		58F811C2301D4E1900B252C2 /* WhisperKit in Frameworks */ = {isa = PBXBuildFile; productRef = 58F811C1301D4E1900B252C2 /* WhisperKit */; };
 /* End PBXBuildFile section */
 
@@ -51,7 +50,6 @@
 		58CA57962FF7875400772EAB /* LiveF1WidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = LiveF1WidgetExtension.entitlements; sourceTree = "<group>"; };
 		58D674AF2FD1879100E13D17 /* Redline.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Redline.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		58D674E92FD56F7A00E13D17 /* .gitignore */ = {isa = PBXFileReference; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
-		58F8119C300BDB5E00B252C2 /* TODO.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = TODO.md; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -186,7 +184,6 @@
 				58CA57962FF7875400772EAB /* LiveF1WidgetExtension.entitlements */,
 				58CA567F2FE1AFFA00772EAB /* LiveF1 */,
 				58C0B0622FDE46D300C7BCC6 /* README.md */,
-				58F8119C300BDB5E00B252C2 /* TODO.md */,
 				58D674E92FD56F7A00E13D17 /* .gitignore */,
 				58CA57552FF7813A00772EAB /* LiveF1Widget */,
 				58CA57502FF7813A00772EAB /* Frameworks */,
@@ -312,7 +309,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				58F8119D300BDB6200B252C2 /* TODO.md in Resources */,
 				58D674EA2FD56F7A00E13D17 /* .gitignore in Resources */,
 				58C0B0632FDE46D300C7BCC6 /* README.md in Resources */,
 			);
@@ -364,7 +360,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.01;
 				PRODUCT_BUNDLE_IDENTIFIER = com.riley.LiveF1.LiveF1Widget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -395,7 +391,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.01;
 				PRODUCT_BUNDLE_IDENTIFIER = com.riley.LiveF1.LiveF1Widget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -539,7 +535,7 @@
 				CODE_SIGN_ENTITLEMENTS = LiveF1/LiveF1.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 15;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = TMN6MFG35F;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -548,6 +544,7 @@
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Used to transcribe F1 team radio";
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Redline uses your photo library to save exported charts and data";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Used to transcribe F1 team radio";
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -558,7 +555,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.01;
 				PRODUCT_BUNDLE_IDENTIFIER = com.riley.LiveF1;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -583,7 +580,7 @@
 				CODE_SIGN_ENTITLEMENTS = LiveF1/LiveF1.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 15;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = TMN6MFG35F;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -592,6 +589,7 @@
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Used to transcribe F1 team radio";
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Redline uses your photo library to save exported charts and data";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Used to transcribe F1 team radio";
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -602,7 +600,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.01;
 				PRODUCT_BUNDLE_IDENTIFIER = com.riley.LiveF1;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";

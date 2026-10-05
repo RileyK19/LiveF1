@@ -8,7 +8,7 @@
 import Foundation
 import SwiftUI
 
-private var isDebugTagEnabled = true //toggle
+private var isDebugTagEnabled = false //toggle
 
 func print(
     _ items: Any...,
@@ -16,6 +16,10 @@ func print(
     terminator: String = "\n"
 ) {
     guard isDebugTagEnabled else { return }
+    
+    PrintLog.append(
+        items.map { "\($0)" }.joined(separator: separator)
+    )
 
     Swift.print(
         items.map { "\($0)" }.joined(separator: separator),
@@ -34,3 +38,22 @@ struct DebugPrintToggle: View {
         )
     }
 }
+
+struct PrintLog {
+    private static let key = "printLog"
+
+    static var log: [String] = {
+        UserDefaults.standard.stringArray(forKey: key) ?? []
+    }()
+
+    static func append(_ str: String) {
+        log.append(str)
+        UserDefaults.standard.set(log, forKey: key)
+    }
+
+    static func clear() {
+        log.removeAll()
+        UserDefaults.standard.removeObject(forKey: key)
+    }
+}
+
