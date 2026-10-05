@@ -64,6 +64,11 @@ class F1SessionStore: ObservableObject, Hashable {
                     self?.enqueue(topic: topic, payload: payload)
                 }
             }
+            dataSource?.onStateChange = { [weak self] state in
+                Task { @MainActor in
+                    self?.connectionState = state
+                }
+            }
 //            dataSource?.onStateChange = { [weak self] state in
 //                Task { @MainActor in
 //                    self?.connectionState = state
@@ -176,7 +181,9 @@ class F1SessionStore: ObservableObject, Hashable {
             return "\(current) / \(total)"
         }()
         
-        if topic == "SessionData", let series = payload["StatusSeries"] as? [String: Any] {
+        if LiveActivityManager.liveActivityToggle,
+            topic == "SessionData",
+            let series = payload["StatusSeries"] as? [String: Any] {
             let ordered = series.compactMap { key, value -> (Int, String)? in
                 guard let idx = Int(key),
                       let entry = value as? [String: Any],

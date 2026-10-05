@@ -11,6 +11,8 @@ import Foundation
 @MainActor
 final class LiveActivityManager {
     static let shared = LiveActivityManager()
+    
+    static var liveActivityToggle: Bool = true
 
     private var activity: Activity<F1SessionAttributes>?
 

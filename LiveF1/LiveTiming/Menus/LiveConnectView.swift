@@ -22,6 +22,7 @@ struct LiveConnectView: View {
     @State private var delay: Int = 0
     @State private var showingInfo = false
     @FocusState private var focus: Bool
+    private var liveActivityToggle: Bool { LiveActivityManager.liveActivityToggle }
     var statusText: String {
         switch store.connectionState {
         case .disconnected: return "Disconnected"
@@ -133,6 +134,18 @@ struct LiveConnectView: View {
                     PillButton(title: "Set delay", color: .purple) {
                         store.setDelay(TimeInterval(delay))
                         focus = false
+                    }
+                }
+                .padding(.horizontal, 20)
+                
+                RowCard(icon: "bell", color: .orange) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Lock screen live updates")
+                            .font(.system(size: 13, weight: .black, design: .rounded))
+                    }
+                } trailing: {
+                    PillButton(title: liveActivityToggle ? "Disable" : "Enable", color: .orange) {
+                        LiveActivityManager.liveActivityToggle.toggle()
                     }
                 }
                 .padding(.horizontal, 20)
