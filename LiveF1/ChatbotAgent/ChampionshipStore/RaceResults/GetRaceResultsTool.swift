@@ -10,7 +10,7 @@ import FoundationModels
 
 @Generable
 struct GetRaceResultsArguments {
-    @Guide(description: "The race name or circuit/location the user is asking about, e.g. 'Zandvoort', 'Dutch Grand Prix', 'Monaco'. Do not guess a round number — pass the name as given.")
+    @Guide(description: "The race name or circuit/location the user is asking about, e.g. 'Zandvoort', 'Dutch Grand Prix', 'Monaco'. Do not guess a round number — pass the name as given. Or provide 'last' or 'next' instead of the name.")
     var raceQuery: String
 }
 
@@ -42,13 +42,31 @@ struct GetRaceResultsTool: Tool {
     func call(arguments: GetRaceResultsArguments) async throws -> GetRaceResultsResult {
         await store.fetchAllIfNeeded()
         
-        let race: ChampionshipRace? = await MainActor.run {
-            let query = arguments.raceQuery.lowercased()
+        var race: ChampionshipRace? = await MainActor.run {
+            let query = arguments.raceQuery
+                .lowercased()
+                .replacingOccurrences(of: "gp", with: "")
+                .replacingOccurrences(of: "grand prix", with: "")
+                .replacingOccurrences(of: " ", with: "")
             return store.races.first {
                 $0.raceName.lowercased().contains(query) ||
                 $0.circuit.circuitName.lowercased().contains(query) ||
                 $0.circuit.location.locality.lowercased().contains(query) ||
                 $0.circuit.location.country.lowercased().contains(query)
+            }
+        }
+        
+        if arguments.raceQuery == "next" {
+            race = await store.races.sorted(by: { r1, r2 in
+                r1.date < r2.date
+            }).first {
+                $0.isNext
+            }
+        } else if arguments.raceQuery == "last" {
+            race = await store.races.sorted(by: { r1, r2 in
+                r1.date > r2.date
+            }).first {
+                $0.isPast
             }
         }
 

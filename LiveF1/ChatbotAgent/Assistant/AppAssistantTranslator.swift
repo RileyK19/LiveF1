@@ -111,28 +111,21 @@ class AppAssistantTranslator: ObservableObject {
             Strategy "what if" questions — always in this order (do NOT call getSchedule for these, even though a race/track name is mentioned):
                a. loadRaceForStrategy → totalLaps, driverRoster.
                b. selectDriverForStrategy — pass the driver name as the user wrote it, verbatim. Returns the resolved driver, actualPitLaps, actualCompounds, and strategyTemplatesObserved — use these directly, don't guess.
+               c. evaluatePitStrategy — describe the change; the app applies it to the driver's real strategy. You never copy or rewrite pit lap arrays for edits.
 
-               c. evaluatePitStrategy — provide pitLaps (ascending list of pit laps) and compounds (exactly pitLaps.count + 1 entries, one more than the number of stops). Two kinds of request:
+                  requestType editExisting + edits (applied in order):
+                    - shiftStop(stop, laps): "pit 5 laps later" → laps 5. "3 laps earlier" → laps -3. An undercut is negative laps, an overcut is positive.
+                    - addStop(atLap, compound), removeStop(stop), setCompound(stint, compound).
+                    - `stop` is a stop NUMBER (1 = first stop, 2 = second), never a lap number. If the driver made only one stop, omit it.
+                    - "More aggressive undercut" → shiftStop with negative laps, optionally plus setCompound to a softer tyre.
 
-                  DELTA request ("move the Nth stop X laps earlier/later") — copy actualPitLaps and actualCompounds verbatim, then change exactly ONE number. Never add, remove, or reorder entries for a delta request.
-                    Worked examples (actualPitLaps: [3, 28], actualCompounds: [SOFT, MEDIUM, HARD]):
-                    - "second stop 5 laps earlier" → pitLaps: [3, 23], compounds: [SOFT, MEDIUM, HARD]  (only index 1 changed: 28-5=23)
-                    - "second stop 5 laps later"   → pitLaps: [3, 33], compounds: [SOFT, MEDIUM, HARD]  (only index 1 changed: 28+5=33)
-                    - "first stop 2 laps earlier"  → pitLaps: [1, 28], compounds: [SOFT, MEDIUM, HARD]  (only index 0 changed: 3-2=1)
+                    requestType freshPlan — ONLY when the user asks for a different number of stops ("one stop", "two-stop", "three stop"). Set stopCount; the app chooses the pit laps. Only fill freshCompounds (stopCount + 1 tyres) if a strategyTemplatesObserved entry for that stop count suggests specific compounds; otherwise leave it empty.
 
-                  STOP-COUNT request ("one stop", "three stop") — build FRESH pit laps from scratch, do not reuse actualPitLaps's values. Check strategyTemplatesObserved first for a template matching the requested stop count and base your pit laps/compounds on it; if none exists, space pit laps evenly across totalLaps.
-                    Worked examples (totalLaps: 53, actual is 1-stop [3, 28] with 2 stints):
-                    - "one stop"   → pitLaps: [27], compounds: [MEDIUM, HARD]  (1 pit lap, 2 compounds)
-                    - "three stop" → pitLaps: [13, 27, 40], compounds: [SOFT, MEDIUM, MEDIUM, HARD]  (3 fresh pit laps evenly spaced, 4 compounds)
+               evaluatePitStrategy returns structuralDiff — the actual computed difference from the driver's real race. Before replying, check it matches what the user asked for:
+               - Empty diff, a missing requested change, or an unrequested change → correct the call and evaluate again.
+               Never state a time delta that didn't come from a structuralDiff you've verified this way.
 
-                  Rule that always holds: pitLaps.count must equal compounds.count - 1. Set changeSummary to state the exact arithmetic or template you used, e.g. "actualPitLaps[1] = 28, requested +5, new value = 33" or "built a fresh 3-stop from evenly spaced laps since no 3-stop template existed."
-
-               evaluatePitStrategy returns structuralDiff — the actual computed difference from the driver's real race. Before replying:
-               - Empty diff → you evaluated the unchanged actual strategy. Rebuild and re-evaluate.
-               - Diff missing the requested change, or containing changes not requested → rebuild and re-evaluate.
-               Never present a result, or state a time delta, that didn't come from a structuralDiff you've verified this way.
-
-               If evaluatePitStrategy errors or rejects your input, silently correct pitLaps/compounds and call it again — don't explain the failure or ask permission. Only reply once you have a verified success.
+               If evaluatePitStrategy returns an error, silently fix the call using the error text and try again — don't explain the failure or ask permission. Only reply once you have a verified success.
             """)
         }
 
@@ -359,11 +352,9 @@ class AppAssistantTranslator: ObservableObject {
 
         let strategyKeywords = ["pit", "stop", "strategy", "what if", "stint", "undercut", "overcut", "compound", "tyre", "tire"]
         let paceKeywords = ["pace", "quickest", "quicker", "slower", "faster", "fastest"]
-        let lapKeywords = ["pole", "fastest lap", "best lap", "quickest lap", "lap time", "laptime",
-                           "every lap", "all laps", "each lap", "quali", "practice"]
-        let champKeywords = ["standing", "points", "schedule", "result", "championship", "next race", "last race", "who won", "session"]
-        let fiaKeywords = ["penalt", "penaliz", "penalis", "investigat", "steward", "infringement",
-                           "disqualif", "reprimand", "punish", "fia doc", "unsafe release", "track limits"]
+        let lapKeywords = ["pole", "fastest lap", "best lap", "quickest lap", "lap time", "laptime", "every lap", "all laps", "each lap", "quali", "practice"]
+        let champKeywords = ["standing", "points", "schedule", "result", "championship", "next race", "last race", "who won", "session", "finish", "podium", "when is"]
+        let fiaKeywords = ["penalt", "penaliz", "penalis", "investigat", "steward", "infringement", "disqualif", "reprimand", "punish", "fia doc", "unsafe release", "track limits"]
 
         if strategyKeywords.contains(where: { p.contains($0) }) { categories.insert(.strategy) }
         if paceKeywords.contains(where: { p.contains($0) }) { categories.insert(.racePace) }
