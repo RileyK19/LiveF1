@@ -64,22 +64,22 @@ class F1SessionStore: ObservableObject, Hashable {
                     self?.enqueue(topic: topic, payload: payload)
                 }
             }
-//            dataSource?.onStateChange = { [weak self] state in
-//                Task { @MainActor in
-//                    self?.connectionState = state
-//                }
-//            }
             dataSource?.onStateChange = { [weak self] state in
                 Task { @MainActor in
                     self?.connectionState = state
-                    if case .connected = state {
-                        let sessionName = (self?.rawTopics["SessionInfo"] as? [String: Any])?["Name"] as? String ?? "Session"
-                        LiveActivityManager.shared.start(sessionName: sessionName)
-                    } else if case .disconnected = state {
-                        LiveActivityManager.shared.end()
-                    }
                 }
             }
+//            dataSource?.onStateChange = { [weak self] state in
+//                Task { @MainActor in
+//                    self?.connectionState = state
+//                    if case .connected = state {
+//                        let sessionName = (self?.rawTopics["SessionInfo"] as? [String: Any])?["Name"] as? String ?? "Session"
+//                        LiveActivityManager.shared.start(sessionName: sessionName)
+//                    } else if case .disconnected = state {
+//                        LiveActivityManager.shared.end()
+//                    }
+//                }
+//            }
         }
     }
     
