@@ -15,6 +15,7 @@ struct AppAssistantView: View {
     @State private var prompt: String = ""
     @State private var messages: [AssistantMessage] = []
     @FocusState private var inputFocused: Bool
+    @AppStorage("hasSeenAIDisclosure") private var hasSeenDisclosure = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -83,6 +84,13 @@ struct AppAssistantView: View {
         } message: {
             Text(translator.error ?? "")
         }
+        .sheet(isPresented: Binding(
+            get: { !hasSeenDisclosure },
+            set: { _ in }
+        )) {
+            AIDisclosureSheet { hasSeenDisclosure = true }
+                .interactiveDismissDisabled()
+        }
     }
 
     private var thinkingIndicator: some View {
@@ -113,9 +121,14 @@ struct AppAssistantView: View {
     
     private var suggestionsView: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Try asking...")
-                .font(.headline)
-                .padding(.bottom, 4)
+            VStack (alignment: .leading, spacing: 3) {
+                Text("Private, on-device AI. Powered by Apple Intelligence.")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                Text("Try asking...")
+                    .font(.headline)
+                    .padding(.bottom, 4)
+            }
 
             ForEach(suggestions, id: \.self) { suggestion in
                 Button {
@@ -159,5 +172,31 @@ struct AppAssistantView: View {
                 messages.append(AssistantMessage(role: .assistant, text: "Sorry, I couldn't process that: \(error)"))
             }
         }
+    }
+}
+
+struct AIDisclosureSheet: View {
+    let onContinue: () -> Void
+
+    var body: some View {
+        VStack(spacing: 20) {
+            Image(systemName: "lock.iphone").font(.system(size: 44))
+            Text("How the Assistant works").font(.title2.bold())
+
+            VStack(alignment: .leading, spacing: 12) {
+                Text("**On-device AI.** Your questions are processed on your iPhone by Apple Intelligence. They are not sent to any third-party AI service.")
+                Text("**Public F1 data.** To answer, Redline requests public race data (results, standings, schedules, lap times, FIA documents) from F1 SignalR, FIA's website, OpenF1, and Jolpica F1. These requests include only race, session, year and driver details, never your full message, conversation history, or personal information.")
+                Text("**No chat storage.** Redline does not collect or store your conversations.")
+            }
+            .font(.subheadline)
+
+            Button("Got It", action: onContinue)
+                .buttonStyle(.borderedProminent)
+                .tint(.red)
+
+            Link("Privacy Policy", destination: URL(string: "https://verdant-gaura-e8e.notion.site/Privacy-Policy-3afaa40c994480b09b42cb7ad12dbfa0?source=copy_link")!)
+                .font(.footnote)
+        }
+        .padding(24)
     }
 }
