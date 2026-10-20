@@ -49,6 +49,16 @@ struct CreditsView: View {
                     Link("F1DB Github", destination: URL(string: "https://github.com/f1db/f1db/tree/main/src/assets/circuits/black")!)
                         .font(.title3)
                 }
+                    
+                Divider()
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Schedule and Results Data")
+                        .font(.title2)
+                        .fontWeight(.semibold)
+                    Link("Jolpica F1", destination: URL(string: "https://github.com/jolpica/jolpica-f1")!)
+                        .font(.title3)
+                }
             }
             .padding()
             .frame(maxWidth: .infinity, alignment: .leading)

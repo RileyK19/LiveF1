@@ -11,7 +11,7 @@ import SwiftUI
 
 struct HeaderRow: View {
     @AppStorage("isDark") private var isDark = false
-    var showPitPredictions: Bool
+    var showPitPredictions: Bool = false
     
     var body: some View {
         HStack(spacing: 4) {

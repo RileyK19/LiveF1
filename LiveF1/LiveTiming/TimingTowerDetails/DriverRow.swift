@@ -7,7 +7,11 @@
 
 import SwiftUI
 
-struct DriverRow: View {
+struct DriverRow: View, Equatable {
+    static func == (lhs: DriverRow, rhs: DriverRow) -> Bool {
+        lhs.driver == rhs.driver
+    }
+    
     @AppStorage("isDark") private var isDark = false
 
     let driver: Driver

@@ -17,6 +17,8 @@ struct LiveConnectView: View {
     @State private var token: String = ""
     @State var liveClient: F1TimingClient?
 //    @ObservedObject var liveClient: F1TimingClient
+    @State private var replayClient: F1ReplayClient?
+    @State private var replaySession: F1Session?
     @State private var showingBrowser = false
     @State private var hasSavedToken = TokenStore.load() != nil
     @State private var delay: Int = 0
@@ -82,6 +84,13 @@ struct LiveConnectView: View {
 //                })
 //                .buttonStyle(.plain)
 //                .padding(.horizontal, 20)
+                
+                if !token.isEmpty {
+                    ReplayRowCard(selected: replaySession, onSelect: startReplay, onExit: connect)
+                        .equatable()
+                        .padding(.horizontal, 20)
+                }
+                
                 RowCard(icon: "key", color: .blue) {
                     HStack(spacing: 12) {
                         Button {
@@ -265,14 +274,15 @@ struct LiveConnectView: View {
                 token = saved
             }
             
-            connect()
+            if replayClient == nil { connect() }
         }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
             guard liveClient != nil else { return }
-            let client = F1TimingClient()
-            store.dataSource = client
-            liveClient = client
-            Task { await client.connect(token: liveClient?.currentToken) }
+            connect()
+//            let client = F1TimingClient()
+//            store.dataSource = client
+//            liveClient = client
+//            Task { await client.connect(token: liveClient?.currentToken) }
 //            Task { await liveClient.connect(token: liveClient.currentToken) }
         }
         .alert("(Optional) F1 TV Login", isPresented: $showingInfo) {
@@ -283,163 +293,169 @@ struct LiveConnectView: View {
     }
 
     private func connect() {
+        teardownReplay()
+        detachLive()
+        store.trackMapVM.reset()
+        store.reset()
         let client = F1TimingClient()
         store.dataSource = client
         liveClient = client
         Task { await client.connect(token: token) }
 //        Task { await liveClient.connect(token: token) }
     }
+    
+    private func startReplay(_ session: F1Session) {
+        detachLive()
+        teardownReplay()
+        store.clear()
+        store.reset()
+        store.trackMapVM.reset()
+        let client = F1ReplayClient()
+        client.pacing = .realtime(speed: 10)   // or .unpaced for benchmarking
+        store.dataSource = client
+        replayClient = client
+        replaySession = session
+        client.start(sessionPath: session.path)
+    }
+
+    private func teardownReplay() {
+        replayClient?.onMessage = nil
+        replayClient?.onStateChange = nil
+        replayClient?.stop()
+        replayClient = nil
+        replaySession = nil
+    }
+
+    private func detachLive() {
+        liveClient?.onMessage = nil
+        liveClient?.onStateChange = nil
+        liveClient?.disconnect()
+        liveClient = nil
+    }
 }
 
-//private struct ConnectionRowCard: View {
-//    let icon: String
-//    @State var value: Binding<String>
-//    let title: String
-//    let titleKey: String
-//    let color: Color
-//    var onPress: ()->Void
-//    let buttonTitle: String
-//    var onPressInfo: ()->Void
-//
-//    var body: some View {
-//        HStack(spacing: 16) {
-//            IconBadge(icon: icon, color: color, size: 48, iconSize: 20, cornerRadius: 14)
-//            
-//            Button {
-//                onPressInfo()
-//            } label: {
-//                Image(systemName: "questionmark.circle")
-//                    .foregroundColor(color.opacity(0.8))
-//            }
-//
-//            VStack(alignment: .leading, spacing: 2) {
-//                Text(title)
-//                    .font(.system(size: 10))
-//                    .foregroundStyle(.primary)
-////                SecureField(titleKey, text: value)
-//                Text(titleKey)
-//                    .font(.system(size: 13, weight: .black, design: .rounded))
-//                    .foregroundStyle(.secondary)
-//                    .foregroundColor(color)
-//            }
-//
-//            Spacer()
-//            
-//            Button {
-//                onPress()
-//            } label: {
-//                Text(buttonTitle)
-//                    .font(.system(size: 13, weight: .black, design: .rounded))
-//                    .foregroundStyle(.secondary)
-//                    .padding()
-//            }
-//            .overlay(
-//                RoundedRectangle(cornerRadius: 24, style: .continuous)
-//                    .strokeBorder(color.opacity(0.5), lineWidth: 2.5)
-//            )
-//        }
-//        .padding(.horizontal, 20)
-//        .padding(.vertical, 16)
-//        .background(color.opacity(0.08), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
-//        .overlay(
-//            RoundedRectangle(cornerRadius: 24, style: .continuous)
-//                .strokeBorder(color.opacity(0.12), lineWidth: 1)
-//        )
-//    }
-//}
-//
-//private struct DelayRowCard: View {
-//    let icon: String
-//    @State var value: Binding<Int>
-//    let titleKey: String
-//    let color: Color
-//    var onPress: ()->Void
-//    let buttonTitle: String
-//    var focus: FocusState<Bool>.Binding
-//
-//    var body: some View {
-//        HStack(spacing: 16) {
-//            IconBadge(icon: icon, color: color, size: 48, iconSize: 20, cornerRadius: 14)
-//
-//            VStack(alignment: .leading, spacing: 2) {
-//                Text(titleKey)
-//                    .font(.system(size: 10))
-//                    .foregroundStyle(.primary)
-//                
-//                TextField(titleKey, value: value, format: .number)
-//                    .keyboardType(.numberPad)
-//                    .font(.system(size: 13, weight: .black, design: .rounded))
-//                    .foregroundStyle(.secondary)
-//                    .foregroundColor(color)
-//                    .focused(focus)
-//            }
-//            Spacer()
-//            
-//            Button {
-//                onPress()
-//            } label: {
-//                Text(buttonTitle)
-//                    .font(.system(size: 13, weight: .black, design: .rounded))
-//                    .foregroundStyle(.secondary)
-//                    .padding()
-//            }
-//            .overlay(
-//                RoundedRectangle(cornerRadius: 24, style: .continuous)
-//                    .strokeBorder(color.opacity(0.5), lineWidth: 2.5)
-//            )
-//        }
-//        .padding(.horizontal, 20)
-//        .padding(.vertical, 16)
-//        .background(color.opacity(0.08), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
-//        .overlay(
-//            RoundedRectangle(cornerRadius: 24, style: .continuous)
-//                .strokeBorder(color.opacity(0.12), lineWidth: 1)
-//        )
-//    }
-//}
-//
-//private struct ReconnectRowCard: View {
-//    let icon: String
-//    var value: String
-//    let titleKey: String
-//    let color: Color
-//    var onPress: ()->Void
-//    let buttonTitle: String
-//
-//    var body: some View {
-//        HStack(spacing: 16) {
-//            IconBadge(icon: icon, color: color, size: 48, iconSize: 20, cornerRadius: 14)
-//
-//            VStack(alignment: .leading, spacing: 2) {
-//                Text(titleKey)
-//                    .font(.system(size: 13, weight: .black, design: .rounded))
-//                    .foregroundStyle(.primary)
-//                
-//                Text(value)
-//                    .font(.system(size: 13))
-//                    .foregroundStyle(.secondary)
-//            }
-//            Spacer()
-//            
-//            Button {
-//                onPress()
-//            } label: {
-//                Text(buttonTitle)
-//                    .font(.system(size: 13, weight: .black, design: .rounded))
-//                    .foregroundStyle(.secondary)
-//                    .padding()
-//            }
-//            .overlay(
-//                RoundedRectangle(cornerRadius: 24, style: .continuous)
-//                    .strokeBorder(color.opacity(0.5), lineWidth: 2.5)
-//            )
-//        }
-//        .padding(.horizontal, 20)
-//        .padding(.vertical, 16)
-//        .background(color.opacity(0.08), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
-//        .overlay(
-//            RoundedRectangle(cornerRadius: 24, style: .continuous)
-//                .strokeBorder(color.opacity(0.12), lineWidth: 1)
-//        )
-//    }
-//}
+struct ReplayRowCard: View, Equatable {
+    let selected: F1Session?                  // nil = live
+    let onSelect: (F1Session) -> Void
+    let onExit: () -> Void
+
+    // Closures are ignored: only a change of selection should rebuild the card.
+    static func == (lhs: ReplayRowCard, rhs: ReplayRowCard) -> Bool {
+        lhs.selected?.id == rhs.selected?.id
+    }
+
+    private struct MeetingGroup: Identifiable {
+        let id: String
+        let name: String
+        var sessions: [(session: F1Session, label: String)]
+        var sessionIDs: [String] { sessions.map(\.session.id) }
+    }
+
+    private struct YearGroup: Identifiable {
+        let year: Int
+        var meetings: [MeetingGroup]
+        var id: Int { year }
+    }
+
+    @State private var yearGroups: [YearGroup] = []
+    @State private var isLoading = false
+
+    private let years = [2026, 2025]
+    private let tint = Color.teal
+
+    var body: some View {
+        RowCard(icon: "play.circle", color: tint) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Replay a race")
+                    .font(.system(size: 10))
+                    .foregroundStyle(.primary)
+                Text(selected?.name ?? "Live")
+                    .font(.system(size: 13, weight: .black, design: .rounded))
+                    .foregroundColor(tint)
+                    .lineLimit(1)
+            }
+        } trailing: {
+            HStack(spacing: 8) {
+                if yearGroups.isEmpty {
+                    // Nothing loaded: either still loading or the fetch failed.
+                    Button {
+                        Task { await loadSessions() }
+                    } label: {
+                        pill(isLoading ? "Loading…" : "Retry")
+                    }
+                    .disabled(isLoading)
+                } else {
+                    Menu {
+                        ForEach(yearGroups) { yg in
+                            Section(String(yg.year)) {
+                                ForEach(yg.meetings) { meeting in
+                                    Menu(meeting.name) {
+                                        ForEach(meeting.sessions, id: \.session.id) { item in
+                                            Button(item.label) { onSelect(item.session) }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    } label: {
+                        pill("Choose")
+                    }
+                }
+
+                if selected != nil {
+                    Button(action: onExit) {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.title3)
+                            .foregroundStyle(.secondary)
+                    }
+                    .accessibilityLabel("Return to live")
+                }
+            }
+        }
+        .onAppear { Task { await loadSessions() } }
+    }
+
+    private func pill(_ title: String) -> some View {
+        Text(title)
+            .font(.system(size: 12, weight: .black, design: .rounded))
+            .foregroundColor(tint)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .background(tint.opacity(0.15), in: Capsule())
+    }
+
+    // Fetch each year in parallel, then group once (not on every render).
+    private func loadSessions() async {
+        guard yearGroups.isEmpty, !isLoading else { return }
+        isLoading = true
+        defer { isLoading = false }
+
+        let fetched = await withTaskGroup(of: (Int, [F1Session]).self) { group in
+            for year in years {
+                group.addTask { (year, await fetchSessions(year: year)) }
+            }
+            var out: [Int: [F1Session]] = [:]
+            for await (year, sessions) in group { out[year] = sessions }
+            return out
+        }
+
+        var result: [YearGroup] = []
+        for year in years {
+            guard let sessions = fetched[year], !sessions.isEmpty else { continue }
+            var meetings: [MeetingGroup] = []
+            for s in sessions {
+                let parts = s.name.components(separatedBy: " — ")
+                let meeting = parts.first ?? s.name
+                let label = parts.last ?? s.name
+                let key = "\(year)-\(meeting)"
+                if let i = meetings.firstIndex(where: { $0.id == key }) {
+                    meetings[i].sessions.append((s, label))
+                } else {
+                    meetings.append(MeetingGroup(id: key, name: meeting, sessions: [(s, label)]))
+                }
+            }
+            result.append(YearGroup(year: year, meetings: meetings))
+        }
+        yearGroups = result
+    }
+}

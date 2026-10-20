@@ -209,11 +209,16 @@ struct LiveBadge: View {
 // MARK: - HomeView
 
 struct HomeView: View {
-    @StateObject private var store = F1SessionStore()
-    @StateObject private var championshipStore: ChampionshipDataStore = ChampionshipDataStore()
-    @StateObject private var currentSessionStore = CurrentSessionStore()
-//    @StateObject private var client = F1TimingClient()
-    @StateObject private var fiaStore = FIADocumentStore()
+//    @StateObject private var store = F1SessionStore()
+//    @StateObject private var championshipStore: ChampionshipDataStore = ChampionshipDataStore()
+//    @StateObject private var currentSessionStore = CurrentSessionStore()
+////    @StateObject private var client = F1TimingClient()
+//    @StateObject private var fiaStore = FIADocumentStore()
+    var store: F1SessionStore
+    var championshipStore: ChampionshipDataStore
+    var currentSessionStore: CurrentSessionStore
+    var fiaStore: FIADocumentStore
+    
     @AppStorage("isDark") var isDark = false
     @State private var showingSettings = false
     @State private var mode: AppMode = .live
@@ -221,26 +226,22 @@ struct HomeView: View {
     
     enum AppMode { case live, replay, documents, predictor }
     
-    private var next: ChampionshipRace? {
-        championshipStore.races
-            .filter { $0.isNext && $0.raceDate != nil }
-            .sorted { $0.raceDate! < $1.raceDate! }
-            .first
-    }
+    @State private var next: ChampionshipRace? = nil
     
     private var mostRecent: (race: ChampionshipRace, name: String, session: ChampionshipSession)? {
         championshipStore.mostRecentSession
     }
 
-    private var isAssistantAvailable: Bool {
-        switch SystemLanguageModel.default.availability {
-        case .available:
-            return true
-        case .unavailable(let reason):
-//            print("unavailable: \(reason)")
-            return false
-        }
-    }
+//    private var isAssistantAvailable: Bool {
+//        switch SystemLanguageModel.default.availability {
+//        case .available:
+//            return true
+//        case .unavailable(let reason):
+////            print("unavailable: \(reason)")
+//            return false
+//        }
+//    }
+    @State private var isAssistantAvailable = false
     
     var body: some View {
 //        NavigationStack {
@@ -498,6 +499,11 @@ struct HomeView: View {
                         self.hasLiveSession = isLive
                     }
                 }
+                isAssistantAvailable = SystemLanguageModel.default.availability == .available
+                next = championshipStore.races
+                        .filter { $0.isNext && $0.raceDate != nil }
+                        .sorted { $0.raceDate! < $1.raceDate! }
+                        .first
             }
 //        }
         .preferredColorScheme(isDark ? .dark : .light)
@@ -540,6 +546,6 @@ func checkForLiveSession(completion: @escaping (Bool) -> Void) {
     }.resume()
 }
 
-#Preview {
-    HomeView()
-}
+//#Preview {
+//    HomeView()
+//}

@@ -9,8 +9,8 @@ import SwiftUI
 
 class F1TimingParser {
     static func parse(store: F1SessionStore) -> [Driver] {
-        let debug_bool = false
-        if debug_bool { print("🏎 DriverList: \(store.rawTopics["DriverList"] as? [String: Any] ?? [:])") }
+//        let debug_bool = false
+//        if debug_bool { print("🏎 DriverList: \(store.rawTopics["DriverList"] as? [String: Any] ?? [:])") }
         let driverList = store.rawTopics["DriverList"] as? [String: Any] ?? [:]
         let timingData = (store.rawTopics["TimingData"] as? [String: Any])?["Lines"] as? [String: Any] ?? [:]
         let appData = (store.rawTopics["TimingAppData"] as? [String: Any])?["Lines"] as? [String: Any] ?? [:]
@@ -22,11 +22,11 @@ class F1TimingParser {
         for (number, driverRaw) in driverList {
             guard let d = driverRaw as? [String: Any] else { continue }
             let timing = timingData[number] as? [String: Any] ?? [:]
-            if debug_bool { print("👤 \(number): tla=\(d["Tla"] ?? "nil") pos=\(timing["Position"] ?? "nil")") }
+//            if debug_bool { print("👤 \(number): tla=\(d["Tla"] ?? "nil") pos=\(timing["Position"] ?? "nil")") }
             let app = appData[number] as? [String: Any] ?? [:]
-            if debug_bool { print("🏎 appData for \(number): \(app)") }
+//            if debug_bool { print("🏎 appData for \(number): \(app)") }
             
-            if debug_bool { print("🔵 raw sectors for \(number): \(timing["Sectors"] ?? "nil")") }
+//            if debug_bool { print("🔵 raw sectors for \(number): \(timing["Sectors"] ?? "nil")") }
             
             let s0 = parseSector(0, from: timing["Sectors"])
             let s1 = parseSector(1, from: timing["Sectors"])
@@ -104,7 +104,7 @@ class F1TimingParser {
 //                let d = cur - best
 //                return (d < 0 ? "" : "+") + String(format: "%.3f", d)
 //            }()
-            if debug_bool { print("🟢 \(number) PersonalFastest raw=\(lastLapRaw["PersonalFastest"] ?? "nil")") }
+//            if debug_bool { print("🟢 \(number) PersonalFastest raw=\(lastLapRaw["PersonalFastest"] ?? "nil")") }
             
             drivers.append(Driver(
                 id: number,

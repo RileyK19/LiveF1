@@ -11,6 +11,12 @@ import NotificationLog
 @main
 struct LiveF1App: App {
     @State private var router = Router()
+    
+    @StateObject private var store = F1SessionStore()
+    @StateObject private var championshipStore: ChampionshipDataStore = ChampionshipDataStore()
+    @StateObject private var currentSessionStore = CurrentSessionStore()
+    @StateObject private var fiaStore = FIADocumentStore()
+    
     var body: some Scene {
         WindowGroup {
 //            ContentView()
@@ -21,7 +27,12 @@ struct LiveF1App: App {
 //                    appID: Constants.appID
 //                ))
             NavigationStack(path: $router.path) {
-                HomeView()
+                HomeView(
+                    store: store,
+                    championshipStore: championshipStore,
+                    currentSessionStore: currentSessionStore,
+                    fiaStore: fiaStore
+                )
                     .navigationDestination(for: Destination.self) {
                         DestinationView(destination: $0)
                     }

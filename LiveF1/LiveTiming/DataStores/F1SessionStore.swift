@@ -12,14 +12,17 @@ import Combine
 import Speech
 import WhisperKit
 
+import os
+let signposter = OSSignposter(logHandle: OSLog(subsystem: "Redline", category: .pointsOfInterest))
+
 @MainActor
 class F1SessionStore: ObservableObject, Hashable {
     public var id: UUID = UUID()
-    @Published var rawTopics: [String: Any] = [:]   // raw merged state per topic, for debug view
-    @Published var messages: [(topic: String, payload: [String: Any])] = []  // last N messages
+    var rawTopics: [String: Any] = [:]   // raw merged state per topic, for debug view
+    var messages: [(topic: String, payload: [String: Any])] = []  // last N messages
     @Published var connectionState: DataSourceState = .disconnected
     @Published var carTelemetry: [String: CarTelemetry] = [:]
-    @Published var updateCount: Int = 0
+    var updateCount: Int = 0
     @Published var radioMessages: [RadioMessage] = []
     @Published var raceControlMessages: [RaceControlMessage] = []
     @Published var carPositions: [String: CarPosition] = [:]
@@ -33,7 +36,7 @@ class F1SessionStore: ObservableObject, Hashable {
 
     private var toastTimer: Task<Void, Never>?
     
-    private var pendingRadio: [String: Any]?
+    private var pendingRadio: [[String: Any]] = []
     
     private let maxMessages = 200
     
@@ -45,6 +48,12 @@ class F1SessionStore: ObservableObject, Hashable {
     private var flushTask: Task<Void, Never>?
     
     private var whisperPipe: WhisperKit?
+    
+    private static let parseTopics: Set<String> =
+        ["DriverList", "TimingData", "TimingAppData", "TimingStats"]
+    private var driversDirty = false
+    private var pendingTelemetry: [String: CarTelemetry] = [:]
+    private var pendingPositions: [String: CarPosition] = [:]
     
     @Published var pitPredictions: [String: PitPrediction] = [:]
     private let pitEngine = PitEngine()
@@ -134,8 +143,36 @@ class F1SessionStore: ObservableObject, Hashable {
         flushTask?.cancel()
     }
     
+    func reset() {
+        rawTopics = [:]
+        messages = []
+        connectionState = .disconnected
+        carTelemetry = [:]
+        updateCount = 0
+        radioMessages = []
+        raceControlMessages = []
+        carPositions = [:]
+        toastQueue = []
+        isDelayRampingUp = false
+        delayRampRemaining = 0
+        pendingRadio = []
+        transcriptionQueue = []
+        isTranscribing = false
+        delaySeconds = 0
+        buffer = []
+        pitPredictions = [:]
+        driversDirty = false
+        pendingTelemetry = [:]
+        pendingPositions = [:]
+        
+    }
+    
     private func handle(topic: String, payload: [String: Any]) {
-        if topic != "TimingData" { print("📨 \(topic)") }
+        
+        let handleState = signposter.beginInterval("handle", id: signposter.makeSignpostID(), "\(topic, privacy: .public)")
+        defer { signposter.endInterval("handle", handleState) }
+        
+//        if topic != "TimingData" { print("📨 \(topic)") }
 //                if topic == "TimingData" {
 //                    print("🏁 TimingData delta: \(String(describing: payload).prefix(200))")
 //                    print("🏁 TimingData delta: \(String(describing: payload))")
@@ -147,29 +184,40 @@ class F1SessionStore: ObservableObject, Hashable {
 //            print("📻 TeamRadio payload: \(payload)")
 //        }
         
-        if topic == "TimingAppData",
-           let lines = (rawTopics["TimingAppData"] as? [String: Any])?["Lines"] as? [String: Any],
-           let d = lines["1"] as? [String: Any] {
-            print("🛞 merged stints for 1: \(d["Stints"] as Any)")
-        }
+//        if topic == "TimingAppData",
+//           let lines = (rawTopics["TimingAppData"] as? [String: Any])?["Lines"] as? [String: Any],
+//           let d = lines["1"] as? [String: Any] {
+//            print("🛞 merged stints for 1: \(d["Stints"] as Any)")
+//        }
         
         // Deep-merge the delta into our state for this topic
+        let mergeState = signposter.beginInterval("deepMerge")
         if var existing = rawTopics[topic] as? [String: Any] {
             deepMerge(into: &existing, from: payload)
             rawTopics[topic] = existing
         } else {
             rawTopics[topic] = payload
         }
+        signposter.endInterval("deepMerge", mergeState)
         
         // Keep a log of recent raw messages for the debug view
         messages.append((topic, payload))
         if messages.count > maxMessages {
             messages.removeFirst(messages.count - maxMessages)
         }
-        drivers = F1TimingParser.parse(store: self)
+//        if [
+//            "DriverList", "TimingData", "TimingAppData", "TimingStats"
+//        ].contains(topic) {
+//            let parseState = signposter.beginInterval("parse")
+//            drivers = F1TimingParser.parse(store: self)
+//            signposter.endInterval("parse", parseState)
+//        }
+        if Self.parseTopics.contains(topic) { driversDirty = true }
         
         if topic == "TimingData" {
+            let pitState = signposter.beginInterval("pitEngine")
             if pitEngine.update(rawTopics) { pitPredictions = pitEngine.predictions }
+            signposter.endInterval("pitEngine", pitState)
         }
         
         let trackStatus = (rawTopics["TrackStatus"] as? [String: Any])?["Status"] as? String ?? ""
@@ -181,27 +229,29 @@ class F1SessionStore: ObservableObject, Hashable {
             return "\(current) / \(total)"
         }()
         
-        if LiveActivityManager.liveActivityToggle,
-            topic == "SessionData",
-            let series = payload["StatusSeries"] as? [String: Any] {
-            let ordered = series.compactMap { key, value -> (Int, String)? in
-                guard let idx = Int(key),
-                      let entry = value as? [String: Any],
-                      let status = entry["SessionStatus"] as? String else { return nil }
-                return (idx, status)
-            }.sorted { $0.0 < $1.0 }
-
-            for (_, status) in ordered {
-                if status == "Started" {
-                    let sessionName = (rawTopics["SessionInfo"] as? [String: Any])?["Name"] as? String ?? "Session"
-                    LiveActivityManager.shared.start(sessionName: sessionName)
-                } else if status == "Finished" || status == "Aborted" || status == "Ends" {
-                    LiveActivityManager.shared.end()
-                }
-            }
-        }
+//        if LiveActivityManager.liveActivityToggle,
+//            topic == "SessionData",
+//            let series = payload["StatusSeries"] as? [String: Any] {
+//            let ordered = series.compactMap { key, value -> (Int, String)? in
+//                guard let idx = Int(key),
+//                      let entry = value as? [String: Any],
+//                      let status = entry["SessionStatus"] as? String else { return nil }
+//                return (idx, status)
+//            }.sorted { $0.0 < $1.0 }
+//
+//            for (_, status) in ordered {
+//                if status == "Started" {
+//                    let sessionName = (rawTopics["SessionInfo"] as? [String: Any])?["Name"] as? String ?? "Session"
+//                    LiveActivityManager.shared.start(sessionName: sessionName)
+//                } else if status == "Finished" || status == "Aborted" || status == "Ends" {
+//                    LiveActivityManager.shared.end()
+//                }
+//            }
+//        }
         
+        let laState = signposter.beginInterval("liveActivity")
         LiveActivityManager.shared.update(from: drivers, trackStatus: trackStatus, lapCount: lapCount)
+        signposter.endInterval("liveActivity", laState)
         
         if topic == "CarData.z", let entries = payload["Entries"] as? [[String: Any]] {
             if let last = entries.last, let cars = last["Cars"] as? [String: Any] {
@@ -209,7 +259,7 @@ class F1SessionStore: ObservableObject, Hashable {
                     guard let car = carRaw as? [String: Any],
                           let channels = car["Channels"] as? [String: Any]
                     else { continue }
-                    carTelemetry[number] = CarTelemetry(
+                    pendingTelemetry[number] = CarTelemetry(
                         rpm:      channels["0"] as? Int ?? 0,
                         speed:    channels["2"] as? Int ?? 0,
                         gear:     channels["3"] as? Int ?? 0,
@@ -225,7 +275,7 @@ class F1SessionStore: ObservableObject, Hashable {
             if let last = entries.last, let cars = last["Entries"] as? [String: Any] {
                 for (number, carRaw) in cars {
                     guard let car = carRaw as? [String: Any] else { continue }
-                    carPositions[number] = CarPosition(
+                    pendingPositions[number] = CarPosition(
                         x: car["X"] as? Double ?? 0,
                         y: car["Y"] as? Double ?? 0,
                         z: car["Z"] as? Double ?? 0,
@@ -239,16 +289,19 @@ class F1SessionStore: ObservableObject, Hashable {
             if (rawTopics["SessionInfo"] as? [String: Any])?["Path"] as? String != nil {
                 processRadio(payload)
             } else {
-                pendingRadio = payload
+                pendingRadio.append(payload)
             }
         }
         if topic == "RaceControlMessages" {
             processRaceControl(payload)
         }
         
-        if topic == "SessionInfo", let pending = pendingRadio {
-            pendingRadio = nil
-            processRadio(pending)
+        if topic == "SessionInfo",
+           !pendingRadio.isEmpty,
+           (rawTopics["SessionInfo"] as? [String: Any])?["Path"] as? String != nil {
+            let pending = pendingRadio
+            pendingRadio.removeAll()
+            for p in pending { processRadio(p) }
         }
         updateCount += 1
     }
@@ -274,13 +327,13 @@ class F1SessionStore: ObservableObject, Hashable {
             let hex = driver["TeamColour"] as? String ?? "FFFFFF"
             let url = URL(string: "https://livetiming.formula1.com/static/\(sessionPath)\(path)")
             let msg = RadioMessage(id: utc, driverNumber: number, driverTla: tla, teamColour: Color(hex: hex), utc: utc, audioURL: url)
-            print("📻 inserting radio msg: \(tla) \(utc)")
+//            print("📻 inserting radio msg: \(tla) \(utc)")
             if !radioMessages.contains(where: { $0.id == utc }) {
                 radioMessages.insert(msg, at: 0)
                 enqueueToast(.radio(msg.id))
                 transcribe(msg)
-                print("📻 radioMessages count now: \(radioMessages.count)")
-                transcribe(msg)
+//                print("📻 radioMessages count now: \(radioMessages.count)")
+//                transcribe(msg)
             }
         }
     }
@@ -296,8 +349,8 @@ class F1SessionStore: ObservableObject, Hashable {
                sourceDict.keys.allSatisfy({ Int($0) != nil }) {
                 var newArr = targetArr
                 for (indexStr, update) in sourceDict {
-                    if let i = Int(indexStr), i < newArr.count,
-                       let updateDict = update as? [String: Any] {
+                    if let i = Int(indexStr), let updateDict = update as? [String: Any] {
+                        while newArr.count <= i { newArr.append([:]) }
                         var element = newArr[i]
                         deepMerge(into: &element, from: updateDict)
                         newArr[i] = element
@@ -350,7 +403,13 @@ class F1SessionStore: ObservableObject, Hashable {
         Task {
             await loadWhisperIfNeeded()
             guard let (localURL, _) = try? await URLSession.shared.download(from: url) else {
-                await MainActor.run { processTranscriptionQueue() }
+//                await MainActor.run { processTranscriptionQueue() }
+                if retries > 0 {
+                    try? await Task.sleep(nanoseconds: 2_000_000_000)
+                    transcribeWithRetry(msg, retries: retries - 1)
+                } else {
+                    processTranscriptionQueue()
+                }
                 return
             }
             let tempURL = FileManager.default.temporaryDirectory
@@ -453,6 +512,7 @@ class F1SessionStore: ObservableObject, Hashable {
     }
 
     private func flushDue() {
+        publishPending()
         if delaySeconds > 0, let next = buffer.first {
             let releaseAt = next.enqueuedAt.addingTimeInterval(delaySeconds)
             let gap = releaseAt.timeIntervalSince(Date())
@@ -539,6 +599,37 @@ class F1SessionStore: ObservableObject, Hashable {
                 self?.currentToast = nil
                 self?.advanceToastIfNeeded()
             }
+        }
+    }
+    
+    private func publishPending() {
+        if driversDirty {
+            driversDirty = false
+            let parseState = signposter.beginInterval("parse")
+            let new = F1TimingParser.parse(store: self)
+            signposter.endInterval("parse", parseState)
+
+            let pubState = signposter.beginInterval("publish")
+            if new != drivers { drivers = new }      // needs Driver: Equatable
+            signposter.endInterval("publish", pubState)
+
+            let trackStatus = (rawTopics["TrackStatus"] as? [String: Any])?["Status"] as? String ?? ""
+            let lapCount: String = {
+                guard let lc = rawTopics["LapCount"] as? [String: Any],
+                      let current = lc["CurrentLap"], let total = lc["TotalLaps"] else { return "" }
+                return "\(current) / \(total)"
+            }()
+            let laState = signposter.beginInterval("liveActivity")
+            LiveActivityManager.shared.update(from: drivers, trackStatus: trackStatus, lapCount: lapCount)
+            signposter.endInterval("liveActivity", laState)
+        }
+        if !pendingTelemetry.isEmpty {
+            carTelemetry.merge(pendingTelemetry) { $1 }
+            pendingTelemetry.removeAll()
+        }
+        if !pendingPositions.isEmpty {
+            carPositions.merge(pendingPositions) { $1 }
+            pendingPositions.removeAll()
         }
     }
 }

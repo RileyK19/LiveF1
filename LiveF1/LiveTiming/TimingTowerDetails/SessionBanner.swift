@@ -96,9 +96,9 @@ struct SessionBanner: View {
                 }
             }
             Spacer()
-            Text("\(store.updateCount)")
-                .font(.system(.caption2, design: .monospaced))
-                .foregroundStyle(.secondary)
+//            Text("\(store.updateCount)")
+//                .font(.system(.caption2, design: .monospaced))
+//                .foregroundStyle(.secondary)
             Circle()
                 .fill(dotPulse ? Color.green : Color.green.opacity(0.2))
                 .frame(width: 6, height: 6)

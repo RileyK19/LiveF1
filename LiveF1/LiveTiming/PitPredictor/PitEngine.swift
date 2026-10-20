@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import os
 
 struct PitPrediction: Equatable {
     let lap: Int            // laps completed when predicted
@@ -64,10 +65,20 @@ final class PitEngine {
     @discardableResult
     func update(_ topics: [String: Any]) -> Bool {
         guard let models, let table else {
-            print("⚠️ PitEngine: models or table failed to load")
+//            print("⚠️ PitEngine: models or table failed to load")
             return false
         }
         guard let timing = (topics["TimingData"] as? [String: Any])?["Lines"] as? [String: Any] else { return false }
+        
+        var ticked: [(number: String, line: [String: Any], laps: Int)] = []
+        for (number, rawLine) in timing {
+            guard let line = rawLine as? [String: Any],
+                  let laps = num(line["NumberOfLaps"]).map({ Int($0) }) else { continue }
+            guard let prev = lastLaps[number] else { lastLaps[number] = laps; continue }
+            if laps > prev { lastLaps[number] = laps; ticked.append((number, line, laps)) }
+            else if laps < prev { lastLaps[number] = laps }
+        }
+        guard !ticked.isEmpty else { return false }
 
         let appLines = (topics["TimingAppData"] as? [String: Any])?["Lines"] as? [String: Any] ?? [:]
         let status = (topics["TrackStatus"] as? [String: Any])?["Status"].map { "\($0)" } ?? "1"
@@ -82,7 +93,7 @@ final class PitEngine {
         let (entry, usedFallback) = table.resolve(slug)
         if usedFallback, warnedFallbackFor != slug {
             warnedFallbackFor = slug
-            print("⚠️ track '\(slug)' not in track_table, using _global")
+//            print("⚠️ track '\(slug)' not in track_table, using _global")
         }
 
         // Gap to leader per car, in seconds.
@@ -108,12 +119,13 @@ final class PitEngine {
 
         var changed = false
 
-        for (number, rawLine) in timing {
-            guard let line = rawLine as? [String: Any],
-                  let laps = num(line["NumberOfLaps"]).map({ Int($0) }) else { continue }
-            guard let prev = lastLaps[number] else { lastLaps[number] = laps; continue }   // first sight: just remember
-            guard laps > prev else { if laps < prev { lastLaps[number] = laps }; continue }
-            lastLaps[number] = laps
+//        for (number, rawLine) in timing {
+//            guard let line = rawLine as? [String: Any],
+//                  let laps = num(line["NumberOfLaps"]).map({ Int($0) }) else { continue }
+//            guard let prev = lastLaps[number] else { lastLaps[number] = laps; continue }   // first sight: just remember
+//            guard laps > prev else { if laps < prev { lastLaps[number] = laps }; continue }
+//            lastLaps[number] = laps
+        for (number, line, laps) in ticked {
 
             // ---- lap tick: gather what we need
             let stints = children(((appLines[number] as? [String: Any])?["Stints"]))
@@ -133,18 +145,18 @@ final class PitEngine {
                   let lastLap = lastLapOpt, let curStint = stints.last?.1,
                   let me = cars.first(where: { $0.number == number })
             else {
-                print("⏭️ #\(number) L\(laps): " + [
-                    laps <= 1 ? "lap1" : nil,
-                    laps >= totalLaps ? "totalLaps=\(totalLaps)" : nil,
-                    blockedStatus ? "status \(status)" : nil,
-                    retired ? "retired/stopped" : nil,
-                    inPit ? "inPit/pitOut" : nil,
-                    stintChanged ? "stint changed" : nil,
-                    wasPitRelated ? "lap after pit" : nil,
-                    lastLapOpt == nil ? "no lastLap" : nil,
-                    stints.last == nil ? "no stint" : nil,
-                    cars.contains(where: { $0.number == number }) ? nil : "not in cars (position/gap)"
-                ].compactMap { $0 }.joined(separator: ", "))
+//                print("⏭️ #\(number) L\(laps): " + [
+//                    laps <= 1 ? "lap1" : nil,
+//                    laps >= totalLaps ? "totalLaps=\(totalLaps)" : nil,
+//                    blockedStatus ? "status \(status)" : nil,
+//                    retired ? "retired/stopped" : nil,
+//                    inPit ? "inPit/pitOut" : nil,
+//                    stintChanged ? "stint changed" : nil,
+//                    wasPitRelated ? "lap after pit" : nil,
+//                    lastLapOpt == nil ? "no lastLap" : nil,
+//                    stints.last == nil ? "no stint" : nil,
+//                    cars.contains(where: { $0.number == number }) ? nil : "not in cars (position/gap)"
+//                ].compactMap { $0 }.joined(separator: ", "))
                 if predictions.removeValue(forKey: number) != nil { changed = true }
                 continue
             }
@@ -181,15 +193,19 @@ final class PitEngine {
             )
             
             guard let f = features(for: ctx, entry: entry) else {
-                print("⚠️ PitEngine: no features for \(number) compound=\(ctx.compound)")
-                print("⏭️ #\(number) L\(laps): features nil (compound \(ctx.compound), totalLaps \(totalLaps))")
+//                print("⚠️ PitEngine: no features for \(number) compound=\(ctx.compound)")
+//                print("⏭️ #\(number) L\(laps): features nil (compound \(ctx.compound), totalLaps \(totalLaps))")
                 continue
             }
+            
+            let predict = signposter.beginInterval("predict")
             guard let out = models.predict(f) else {
-                print("⚠️ PitEngine: predict returned nil for \(number)")
+                signposter.endInterval("predict", predict)
+//                print("⚠️ PitEngine: predict returned nil for \(number)")
                 continue
             }
-            print("🛞 \(number) lap \(laps): stop=\(out.willStop) within5=\(out.within5)")
+            signposter.endInterval("predict", predict)
+//            print("🛞 \(number) lap \(laps): stop=\(out.willStop) within5=\(out.within5)")
 
             let q = [out.lapsLow, out.lapsMedian, out.lapsHigh].sorted()
             predictions[number] = PitPrediction(

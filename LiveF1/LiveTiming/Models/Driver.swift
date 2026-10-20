@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-struct Driver: Identifiable, Hashable {
+struct Driver: Identifiable, Hashable, Equatable {
     let id: String          // racing number
     var position: Int
     var tla: String         // VER, HAM etc

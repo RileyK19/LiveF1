@@ -200,3 +200,14 @@ struct AIDisclosureSheet: View {
         .padding(24)
     }
 }
+
+#Preview {
+    @Previewable @State var showSheet = true
+
+    VStack {
+        Text("Hello World")
+    }
+    .sheet(isPresented: $showSheet) {
+        AIDisclosureSheet { showSheet = false }
+    }
+}

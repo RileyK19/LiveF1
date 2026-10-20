@@ -21,6 +21,7 @@ struct TimingTowerView: View {
     }
 
     var body: some View {
+        let _ = Self._printChanges()
         let drivers = store.drivers
         // let _ = print("🎨 rendering: \(drivers.count) drivers, updateCount: \(store.updateCount)")
         return VStack(spacing: 0) {
@@ -44,6 +45,7 @@ struct TimingTowerView: View {
                                           pit: store.pitPredictions[driver.id],
                                           showPitPredictions: showPitPredictions
                                 )
+                                .equatable()
                             }
                             .buttonStyle(.plain)
                             Divider().opacity(0.2)

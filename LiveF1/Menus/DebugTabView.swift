@@ -73,9 +73,10 @@ struct TopicDetailView: View {
 
 struct MessageLogView: View {
     @ObservedObject var store: F1SessionStore
+    @State private var snapshot: [(topic: String, payload: [String: Any])] = []
 
     var body: some View {
-        List(store.messages.reversed().indices, id: \.self) { i in
+        List(Array(snapshot.enumerated()).reversed().indices, id: \.self) { i in
             let msg = store.messages.reversed()[i]
             
             Menu {
@@ -95,6 +96,10 @@ struct MessageLogView: View {
                 }
             }
             .buttonStyle(.plain)
+        }
+        .onAppear { snapshot = store.messages }
+        .onReceive(Timer.publish(every: 0.5, on: .main, in: .common).autoconnect()) { _ in
+            snapshot = store.messages
         }
     }
 

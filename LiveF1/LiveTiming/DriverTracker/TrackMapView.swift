@@ -32,10 +32,15 @@ struct TrackMapView: View {
         guard !pts.isEmpty else { return nil }
         let xs = pts.map { $0.x }
         let ys = pts.map { $0.y }
-        return (xs.min()!, xs.max()!, ys.min()!, ys.max()!)
+        let xAv = (xs.max()! + xs.min()!) / 2
+        let yAv = (ys.max()! + ys.min()!) / 2
+        let half = max(xs.max()! - xAv, ys.max()! - yAv)
+//        return (xs.min()!, xs.max()!, ys.min()!, ys.max()!)
+        return (xAv - half, xAv + half, yAv - half, yAv + half)
     }
 
     var body: some View {
+        SessionBanner(store: store)
         GeometryReader { geo in
             ZStack {
                 if let b = bounds, b.maxX > b.minX, b.maxY > b.minY {

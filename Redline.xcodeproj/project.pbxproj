@@ -66,6 +66,7 @@
 			membershipExceptions = (
 				ChatbotAgent/Telemetry/Predictor/EvaluateStrategyTool.swift,
 				Info.plist,
+				LiveTiming/DataStores/storebackup.swift,
 			);
 			target = 58D674AE2FD1879100E13D17 /* Redline */;
 		};
