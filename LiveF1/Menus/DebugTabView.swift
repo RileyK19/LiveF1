@@ -12,7 +12,7 @@ import Combine
 // MARK: - Debug tabs
 
 struct DebugTabView: View {
-    @ObservedObject var store: F1SessionStore
+    let store: F1SessionStore
 
     var body: some View {
         TabView {
@@ -31,7 +31,7 @@ struct DebugTabView: View {
 // MARK: - Topic list (current merged state per topic)
 
 struct TopicListView: View {
-    @ObservedObject var store: F1SessionStore
+    let store: F1SessionStore
 
     var sortedTopics: [(String, Any)] {
         store.rawTopics.sorted { $0.key < $1.key }
@@ -72,7 +72,7 @@ struct TopicDetailView: View {
 // MARK: - Message log (stream of incoming deltas)
 
 struct MessageLogView: View {
-    @ObservedObject var store: F1SessionStore
+    let store: F1SessionStore
     @State private var snapshot: [(topic: String, payload: [String: Any])] = []
 
     var body: some View {

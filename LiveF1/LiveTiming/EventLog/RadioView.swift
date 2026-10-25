@@ -10,7 +10,7 @@ import SwiftUI
 import AVFoundation
 
 struct RadioView: View {
-    @ObservedObject var store: F1SessionStore
+    let store: F1SessionStore
     @AppStorage("isDark") private var isDark = false
     @State private var player: AVPlayer?
     @State private var playingId: String?

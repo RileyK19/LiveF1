@@ -9,7 +9,7 @@ import SwiftUI
 import AVFoundation
 
 struct RadioToast: View {
-    @ObservedObject var store: F1SessionStore
+    let store: F1SessionStore
     let msgId: String
     
     var msg: RadioMessage? {

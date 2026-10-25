@@ -9,7 +9,7 @@
 import SwiftUI
 
 struct TimingTowerView: View {
-    @ObservedObject var store: F1SessionStore
+    let store: F1SessionStore
     @State private var selectedDriver: Driver?
     @AppStorage("isDark") private var isDark = false
     
@@ -36,20 +36,24 @@ struct TimingTowerView: View {
                 ScrollView(.horizontal, showsIndicators: false) {
                     VStack(spacing: 0) {
                         HeaderRow(showPitPredictions: showPitPredictions)
-                        ForEach(drivers) { driver in
-                            Button {
-                                selectedDriver = driver
-                            } label: {
-                                DriverRow(driver: driver,
-                                          isLeader: driver.position == 1,
-                                          pit: store.pitPredictions[driver.id],
-                                          showPitPredictions: showPitPredictions
-                                )
-                                .equatable()
+                        VStack(spacing: 0) {
+                            ForEach(drivers) { driver in
+                                Button {
+                                    selectedDriver = driver
+                                } label: {
+                                    DriverRow(driver: driver,
+                                              isLeader: driver.position == 1,
+                                              pit: store.pitPredictions[driver.id],
+                                              showPitPredictions: showPitPredictions
+                                    )
+                                    .equatable()
+                                }
+                                .buttonStyle(.plain)
+                                Divider().opacity(0.2)
                             }
-                            .buttonStyle(.plain)
-                            Divider().opacity(0.2)
                         }
+                        .animation(.spring(response: 0.45, dampingFraction: 0.8),
+                                   value: drivers.map(\.id))
                     }
                     .frame(minWidth: UIScreen.main.bounds.width)
                 }
@@ -96,7 +100,7 @@ struct TimingTowerView: View {
 
 struct DelayProgressView: View {
     @State private var rampBaseline: TimeInterval = 0
-    @ObservedObject var store: F1SessionStore
+    let store: F1SessionStore
     
     private var rampProgress: Double {
         guard rampBaseline > 0 else { return 1 }

@@ -12,7 +12,7 @@ import Combine
 // MARK: - Live connect
 
 struct LiveConnectView: View {
-    @ObservedObject var store: F1SessionStore
+    let store: F1SessionStore
 //    @StateObject var trackerVM: TrackMapViewModel = TrackMapViewModel()
     @State private var token: String = ""
     @State var liveClient: F1TimingClient?
@@ -24,7 +24,7 @@ struct LiveConnectView: View {
     @State private var delay: Int = 0
     @State private var showingInfo = false
     @FocusState private var focus: Bool
-    private var liveActivityToggle: Bool { LiveActivityManager.liveActivityToggle }
+    private var liveActivityToggle: Bool { LiveActivityManager.shared.liveActivityToggle }
     var statusText: String {
         switch store.connectionState {
         case .disconnected: return "Disconnected"
@@ -154,7 +154,10 @@ struct LiveConnectView: View {
                     }
                 } trailing: {
                     PillButton(title: liveActivityToggle ? "Disable" : "Enable", color: .orange) {
-                        LiveActivityManager.liveActivityToggle.toggle()
+                        LiveActivityManager.shared.liveActivityToggle.toggle()
+                        if !LiveActivityManager.shared.liveActivityToggle {
+                            LiveActivityManager.shared.end()
+                        }
                     }
                 }
                 .padding(.horizontal, 20)
@@ -274,7 +277,9 @@ struct LiveConnectView: View {
                 token = saved
             }
             
-            if replayClient == nil { connect() }
+            if replayClient == nil, statusText != "Connected" { connect() }
+            
+            delay = Int(store.delaySeconds)
         }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
             guard liveClient != nil else { return }
@@ -285,11 +290,12 @@ struct LiveConnectView: View {
 //            Task { await client.connect(token: liveClient?.currentToken) }
 //            Task { await liveClient.connect(token: liveClient.currentToken) }
         }
-        .alert("(Optional) F1 TV Login", isPresented: $showingInfo) {
-            Button("OK", role: .cancel) { }
-        } message: {
-            Text("Sign into F1 TV to access extra live telemetry and driver tracker data. F1 TV gives access to throttle, brake, gear, and tracker data, but live timing still works without F1 TV.")
-        }
+//        .alert("(Optional) F1 TV Login", isPresented: $showingInfo) {
+//            Button("OK", role: .cancel) { }
+//        } message: {
+//            Text("Sign into F1 TV to access extra live telemetry and driver tracker data. F1 TV gives access to throttle, brake, gear, and tracker data, but live timing still works without F1 TV.")
+//        }
+        .sheet(isPresented: $showingInfo) { F1TVAlert }
     }
 
     private func connect() {
@@ -331,6 +337,74 @@ struct LiveConnectView: View {
         liveClient?.onStateChange = nil
         liveClient?.disconnect()
         liveClient = nil
+    }
+    
+    private var F1TVAlert: some View {
+        VStack(spacing: 14) {
+            Image(systemName: "flag.checkered")
+                .font(.system(size: 33))
+                .foregroundStyle(.red)
+
+            VStack(spacing: 6) {
+                Text("F1 TV Login")
+                    .font(.title2.bold())
+                Text("OPTIONAL")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .tracking(1.5)
+            }
+
+            Text("Sign in to unlock exclusive telemetry data.")
+                .font(.body)
+                .multilineTextAlignment(.center)
+
+            VStack(alignment: .leading, spacing: 12) {
+                Label("Live throttle, brake, and gear data", systemImage: "speedometer")
+                Label("Driver tracker", systemImage: "location.fill")
+                Label("Past session replays", systemImage: "play.rectangle.fill")
+            }
+            .font(.subheadline)
+            .padding()
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 12))
+
+            Label("Live timing and race control work without an F1 TV login.", systemImage: "info.circle")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+
+            VStack(spacing: 10) {
+                Button {
+                    if token.isEmpty {
+                        showingInfo = false
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                            showingBrowser = true
+                        }
+                    } else {
+                        TokenStore.clear()
+                        token = ""
+                        hasSavedToken = false
+                    }
+                } label: {
+                    Text(token.isEmpty ? "Sign In" : "Sign Out")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 6)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(token.isEmpty ? .red : .gray)
+                .controlSize(.large)
+
+                Button("Not Now") {
+                    showingInfo = false
+                }
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+            }
+        }
+        .padding(20)
+        .presentationDetents([.medium, .large])
+        .presentationDragIndicator(.visible)
     }
 }
 

@@ -11,28 +11,32 @@ import SwiftUI
 import Combine
 import Speech
 import WhisperKit
+import Observation
 
 import os
 let signposter = OSSignposter(logHandle: OSLog(subsystem: "Redline", category: .pointsOfInterest))
 
 @MainActor
-class F1SessionStore: ObservableObject, Hashable {
-    public var id: UUID = UUID()
-    var rawTopics: [String: Any] = [:]   // raw merged state per topic, for debug view
-    var messages: [(topic: String, payload: [String: Any])] = []  // last N messages
-    @Published var connectionState: DataSourceState = .disconnected
-    @Published var carTelemetry: [String: CarTelemetry] = [:]
-    var updateCount: Int = 0
-    @Published var radioMessages: [RadioMessage] = []
-    @Published var raceControlMessages: [RaceControlMessage] = []
-    @Published var carPositions: [String: CarPosition] = [:]
-    @Published var toastQueue: [ToastKind] = []
-    @Published var currentToast: ToastKind?
-    
-    @Published private(set) var isDelayRampingUp: Bool = false
-    @Published private(set) var delayRampRemaining: TimeInterval = 0
-    
-    @Published var trackMapVM: TrackMapViewModel = TrackMapViewModel()
+@Observable
+final class F1SessionStore: Hashable {
+    @ObservationIgnored var id = UUID()
+    @ObservationIgnored var rawTopics: [String: Any] = [:]
+    @ObservationIgnored var messages: [(topic: String, payload: [String: Any])] = []
+    @ObservationIgnored var updateCount = 0
+
+    var connectionState: DataSourceState = .disconnected
+    var carTelemetry: [String: CarTelemetry] = [:]
+    var carPositions: [String: CarPosition] = [:]
+    var radioMessages: [RadioMessage] = []
+    var raceControlMessages: [RaceControlMessage] = []
+    var toastQueue: [ToastKind] = []
+    var currentToast: ToastKind?
+    var drivers: [Driver] = []
+    var pitPredictions: [String: PitPrediction] = [:]
+    var trackMapVM = TrackMapViewModel()
+    private(set) var isDelayRampingUp = false
+    private(set) var delayRampRemaining: TimeInterval = 0
+    var delaySeconds: TimeInterval = 0
 
     private var toastTimer: Task<Void, Never>?
     
@@ -43,7 +47,6 @@ class F1SessionStore: ObservableObject, Hashable {
     private var transcriptionQueue: [RadioMessage] = []
     private var isTranscribing = false
     
-    var delaySeconds: TimeInterval = 0
     private var buffer: [(enqueuedAt: Date, topic: String, payload: [String: Any])] = []
     private var flushTask: Task<Void, Never>?
     
@@ -55,8 +58,21 @@ class F1SessionStore: ObservableObject, Hashable {
     private var pendingTelemetry: [String: CarTelemetry] = [:]
     private var pendingPositions: [String: CarPosition] = [:]
     
-    @Published var pitPredictions: [String: PitPrediction] = [:]
     private let pitEngine = PitEngine()
+    
+    private(set) var tick = 0
+    
+    private static let headerTopics: Set<String> =
+        ["SessionInfo", "LapCount", "ExtrapolatedClock", "TrackStatus"]
+    @ObservationIgnored private var headerDirty = false
+    private(set) var header = SessionHeader()
+
+    private static let isoFrac: ISO8601DateFormatter = {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return f
+    }()
+    private static let iso = ISO8601DateFormatter()
     
     static func == (lhs: F1SessionStore, rhs: F1SessionStore) -> Bool {
         return lhs.id == rhs.id
@@ -73,27 +89,25 @@ class F1SessionStore: ObservableObject, Hashable {
                     self?.enqueue(topic: topic, payload: payload)
                 }
             }
-            dataSource?.onStateChange = { [weak self] state in
-                Task { @MainActor in
-                    self?.connectionState = state
-                }
-            }
 //            dataSource?.onStateChange = { [weak self] state in
 //                Task { @MainActor in
 //                    self?.connectionState = state
-//                    if case .connected = state {
-//                        let sessionName = (self?.rawTopics["SessionInfo"] as? [String: Any])?["Name"] as? String ?? "Session"
-//                        LiveActivityManager.shared.start(sessionName: sessionName)
-//                    } else if case .disconnected = state {
-//                        LiveActivityManager.shared.end()
-//                    }
 //                }
 //            }
+            dataSource?.onStateChange = { [weak self] state in
+                Task { @MainActor in
+                    self?.connectionState = state
+                    if case .connected = state {
+                        let sessionName = (self?.rawTopics["SessionInfo"] as? [String: Any])?["Name"] as? String ?? "Session"
+                        LiveActivityManager.shared.start(sessionName: sessionName)
+                    } else if case .disconnected = state {
+                        LiveActivityManager.shared.end()
+                    }
+                }
+            }
         }
     }
-    
-    @Published var drivers: [Driver] = []
-    
+        
     enum LogEntry: Identifiable {
         case radio(RadioMessage)
         case raceControl(RaceControlMessage)
@@ -133,15 +147,16 @@ class F1SessionStore: ObservableObject, Hashable {
     init() {
         flushTask = Task { [weak self] in
             while !Task.isCancelled {
-                try? await Task.sleep(nanoseconds: 200_000_000) // 5x/sec
-                self?.flushDue()
+                try? await Task.sleep(nanoseconds: 200_000_000)
+                guard let self else { return }   // exits when the store is deallocated
+                self.flushDue()
             }
         }
     }
 
-    deinit {
-        flushTask?.cancel()
-    }
+//    deinit {
+//        flushTask?.cancel()
+//    }
     
     func reset() {
         rawTopics = [:]
@@ -164,7 +179,8 @@ class F1SessionStore: ObservableObject, Hashable {
         driversDirty = false
         pendingTelemetry = [:]
         pendingPositions = [:]
-        
+        headerDirty = false
+        header = SessionHeader()
     }
     
     private func handle(topic: String, payload: [String: Any]) {
@@ -213,6 +229,7 @@ class F1SessionStore: ObservableObject, Hashable {
 //            signposter.endInterval("parse", parseState)
 //        }
         if Self.parseTopics.contains(topic) { driversDirty = true }
+        if Self.headerTopics.contains(topic) { headerDirty = true }
         
         if topic == "TimingData" {
             let pitState = signposter.beginInterval("pitEngine")
@@ -416,7 +433,31 @@ class F1SessionStore: ObservableObject, Hashable {
                 .appendingPathComponent(UUID().uuidString + ".mp3")
             try? FileManager.default.moveItem(at: localURL, to: tempURL)
 
-            let result = try? await whisperPipe?.transcribe(audioPath: tempURL.path)
+            guard let tokenizer = whisperPipe?.tokenizer else { return }
+
+            let prompt = "Formula 1 team radio. Box box, box this lap. Overtake mode, boost mode, "
+                       + "straight mode, corner mode, lift and coast, undercut, overcut, "
+                       + "graining, blistering, dirty air, safety car, VSC, "
+                       + "softs, mediums, hards, inters, wets, delta. "
+                       + "Verstappen, Hadjar, Hamilton, Leclerc, Norris, Piastri, Russell, Antonelli, "
+                       + "Alonso, Stroll, Gasly, Colapinto, Lawson, Lindblad, Hülkenberg, Bortoleto, "
+                       + "Ocon, Bearman, Albon, Sainz, Bottas, Perez."
+
+            let promptTokens = tokenizer.encode(text: " " + prompt)
+                .filter { $0 < tokenizer.specialTokens.specialTokenBegin }
+
+            let options = DecodingOptions(
+                language: "en",
+                temperature: 0,
+                usePrefillPrompt: true,
+                detectLanguage: false,
+                promptTokens: promptTokens
+            )
+
+            let result = try? await whisperPipe?.transcribe(
+                audioPath: tempURL.path,
+                decodeOptions: options
+            )
             try? FileManager.default.removeItem(at: tempURL)
 
             await MainActor.run {
@@ -603,6 +644,7 @@ class F1SessionStore: ObservableObject, Hashable {
     }
     
     private func publishPending() {
+        var changed = false
         if driversDirty {
             driversDirty = false
             let parseState = signposter.beginInterval("parse")
@@ -622,14 +664,45 @@ class F1SessionStore: ObservableObject, Hashable {
             let laState = signposter.beginInterval("liveActivity")
             LiveActivityManager.shared.update(from: drivers, trackStatus: trackStatus, lapCount: lapCount)
             signposter.endInterval("liveActivity", laState)
+            changed = true
         }
         if !pendingTelemetry.isEmpty {
             carTelemetry.merge(pendingTelemetry) { $1 }
             pendingTelemetry.removeAll()
+            changed = true
         }
         if !pendingPositions.isEmpty {
             carPositions.merge(pendingPositions) { $1 }
             pendingPositions.removeAll()
+            changed = true
         }
+        if headerDirty {
+            headerDirty = false
+            rebuildHeader()
+            changed = true
+        }
+        
+        if changed { tick &+= 1 }
+    }
+    
+    private func rebuildHeader() {
+        let info = rawTopics["SessionInfo"] as? [String: Any] ?? [:]
+        let lap = rawTopics["LapCount"] as? [String: Any] ?? [:]
+        let clock = rawTopics["ExtrapolatedClock"] as? [String: Any] ?? [:]
+
+        var h = SessionHeader()
+        let meeting = (info["Meeting"] as? [String: Any])?["Name"] as? String ?? ""
+        h.sessionName = "\(meeting) — \(info["Name"] as? String ?? "")"
+        h.sessionPath = info["Path"] as? String
+        if let c = lap["CurrentLap"] as? Int, let t = lap["TotalLaps"] as? Int { h.lapText = "Lap \(c)/\(t)" }
+        h.flagStatus = (rawTopics["TrackStatus"] as? [String: Any])?["Status"] as? String ?? ""
+        h.remainingText = clock["Remaining"] as? String
+        h.remainingBase = h.remainingText.flatMap { s in
+            let p = s.split(separator: ":").compactMap { Double($0) }
+            return p.count == 3 ? p[0]*3600 + p[1]*60 + p[2] : nil
+        }
+        h.extrapolating = clock["Extrapolating"] as? Bool ?? false
+        if let u = clock["Utc"] as? String { h.clockUtc = Self.isoFrac.date(from: u) ?? Self.iso.date(from: u) }
+        if h != header { header = h }
     }
 }

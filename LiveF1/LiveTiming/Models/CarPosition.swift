@@ -6,7 +6,7 @@
 //
 
 
-struct CarPosition {
+struct CarPosition: Equatable {
     let x: Double
     let y: Double
     let z: Double

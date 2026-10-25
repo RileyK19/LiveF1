@@ -10,7 +10,7 @@ import SwiftUI
 
 struct DriverDetailView: View {
     let driverID: String
-    @ObservedObject var store: F1SessionStore
+    let store: F1SessionStore
     @AppStorage("isDark") private var isDark = false
     
     var driver: Driver {

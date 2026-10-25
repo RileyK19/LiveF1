@@ -9,7 +9,7 @@ import SwiftUI
 import AVFoundation
 
 struct EventLogView: View {
-    @ObservedObject var store: F1SessionStore
+    let store: F1SessionStore
 
     var body: some View {
         List(store.combinedLog) { entry in

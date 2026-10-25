@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct ToastContainerView: View {
-    @ObservedObject var store: F1SessionStore
+    let store: F1SessionStore
 
     var body: some View {
         VStack {

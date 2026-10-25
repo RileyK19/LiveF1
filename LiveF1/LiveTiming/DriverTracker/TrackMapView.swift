@@ -9,7 +9,7 @@
 import SwiftUI
 
 struct TrackMapView: View {
-    @ObservedObject var store: F1SessionStore
+    let store: F1SessionStore
     @AppStorage("isDark") private var isDark = false
     
 //    @State private var trailGrid: [GridKey: [(x: Double, y: Double)]] = [:]
@@ -17,7 +17,7 @@ struct TrackMapView: View {
 //    private let minTrailSpacing: Double = 50
 //    private var cellSize: Double { minTrailSpacing }
     
-    @ObservedObject var VM: TrackMapViewModel
+    let VM: TrackMapViewModel
 
     private var positionedDrivers: [(driver: Driver, pos: CarPosition)] {
         store.drivers.compactMap { driver in
@@ -40,7 +40,9 @@ struct TrackMapView: View {
     }
 
     var body: some View {
-        SessionBanner(store: store)
+        if let b = bounds, b.maxX > b.minX, b.maxY > b.minY {
+            SessionBanner(store: store)
+        }
         GeometryReader { geo in
             ZStack {
                 if let b = bounds, b.maxX > b.minX, b.maxY > b.minY {
@@ -76,12 +78,12 @@ struct TrackMapView: View {
         .padding()
         .background(isDark ? Color.white.opacity(0.05) : Color.black.opacity(0.05))
         .cornerRadius(12)
-        .onChange(of: store.updateCount) { _, _ in
+        .onChange(of: store.carPositions) { _, _ in
             for entry in positionedDrivers {
                 maybeAddTrailPoint(entry.pos)
             }
         }
-        .onChange(of: (store.rawTopics["SessionInfo"] as? [String: Any])?["Path"] as? String) { _, newPath in
+        .onChange(of: store.header.sessionPath) { _, newPath in
             guard newPath != VM.lastSessionPath else { return }
             VM.lastSessionPath = newPath
             VM.trailGrid.removeAll()

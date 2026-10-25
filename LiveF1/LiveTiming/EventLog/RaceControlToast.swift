@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct RaceControlToast: View {
-    @ObservedObject var store: F1SessionStore
+    let store: F1SessionStore
     let msgId: String
 
     var msg: RaceControlMessage? {

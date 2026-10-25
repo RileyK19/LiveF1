@@ -12,7 +12,7 @@ import NotificationLog
 struct LiveF1App: App {
     @State private var router = Router()
     
-    @StateObject private var store = F1SessionStore()
+    @State private var store = F1SessionStore()
     @StateObject private var championshipStore: ChampionshipDataStore = ChampionshipDataStore()
     @StateObject private var currentSessionStore = CurrentSessionStore()
     @StateObject private var fiaStore = FIADocumentStore()

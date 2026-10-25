@@ -13,7 +13,7 @@ struct SettingsView: View {
 //    @Binding var mode: ContentView.AppMode
     @AppStorage("isDark") var isDark = true
     @Environment(\.dismiss) var dismiss
-    @ObservedObject var store: F1SessionStore
+    let store: F1SessionStore
 
     var body: some View {
         NavigationStack {

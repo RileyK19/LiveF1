@@ -7,13 +7,15 @@
 
 import SwiftUI
 import Combine
+import Observation
 
 @MainActor
-class TrackMapViewModel: ObservableObject, Equatable, Hashable {
-    @Published public var trailGrid: [GridKey: [(x: Double, y: Double)]] = [:]
-    @Published public var lastSessionPath: String?
+@Observable
+class TrackMapViewModel: Equatable, Hashable {
+    public var trailGrid: [GridKey: [(x: Double, y: Double)]] = [:]
+    @ObservationIgnored public var lastSessionPath: String?
     public let minTrailSpacing: Double = 50
-    @Published public var cellSize: Double
+    public var cellSize: Double
     public var id: UUID = UUID()
     
     init() {

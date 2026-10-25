@@ -7,24 +7,26 @@
 
 import ActivityKit
 import Foundation
+import Observation
 
 @MainActor
+@Observable
 final class LiveActivityManager {
     static let shared = LiveActivityManager()
     
-    static var liveActivityToggle: Bool = true
+    var liveActivityToggle: Bool = true
 
-    private var activity: Activity<F1SessionAttributes>?
+    @ObservationIgnored private var activity: Activity<F1SessionAttributes>?
 
     // Throttling
-    private var lastUpdateAt: Date = .distantPast
-    private var lastPushedState: F1SessionAttributes.ContentState?
-    private let minInterval: TimeInterval = 2.0   // don't push more than ~1 update / 2s
+    @ObservationIgnored private var lastUpdateAt: Date = .distantPast
+    @ObservationIgnored private var lastPushedState: F1SessionAttributes.ContentState?
+    @ObservationIgnored private let minInterval: TimeInterval = 2.0   // don't push more than ~1 update / 2s
 
     // Coalescing: if updates arrive faster than minInterval, keep the *latest*
     // one and fire it once the window opens back up, instead of just dropping it.
-    private var pendingState: F1SessionAttributes.ContentState?
-    private var flushTask: Task<Void, Never>?
+    @ObservationIgnored private var pendingState: F1SessionAttributes.ContentState?
+    @ObservationIgnored private var flushTask: Task<Void, Never>?
 
     private init() {}
 
