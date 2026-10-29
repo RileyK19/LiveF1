@@ -92,9 +92,21 @@ struct DestinationView: View {
                     router.push(.racePace(session))
                 })
             case SessionDestination.raceDetail:
-                SessionPickerView(route: { session in
-                    router.push(.raceDetail(session))
-                })
+                SessionPickerView(
+                    sessionType: ["Race", "Practice", "Qualifying"],
+                    route: { session in
+                        return
+                    },
+                    isSelectable: true,
+                    selectableOptions: [
+                        "Race": [(title: "Detail", onSelect: { session in
+                            router.push(.raceDetail(session))
+                        })],
+                        "All": [(title: "Summary", onSelect: { session in
+                            router.push(.sessionSummary(session))
+                        })]
+                    ]
+                )
             case SessionDestination.replayLapPicker:
                 SessionPickerView(route: { session in
                     router.push(.replayLapPicker(session))
@@ -150,6 +162,8 @@ struct DestinationView: View {
         case .raceResults(let session, let store):
             ChampionshipResultsView(session: session)
                 .environment(store)
+        case .sessionSummary(let session):
+            SessionSummaryView(session: session)
         }
     }
 }

@@ -24,6 +24,9 @@ extension F1PredictorSession: PickableSession {
 
 struct SessionPickerView: View {
     @StateObject private var viewModel: SessionPickerViewModel
+    
+    var isSelectable: Bool = false
+    var selectableOptions: [String : [(title: String, onSelect: (F1PredictorSession) -> Void)]] = [:]
 
     let title: String
     let route: (F1PredictorSession) -> Void
@@ -37,6 +40,32 @@ struct SessionPickerView: View {
         self.route = route
         _viewModel = StateObject(wrappedValue: SessionPickerViewModel(sessionType: sessionType))
     }
+    
+    init(
+        title: String = "2026 Season",
+        sessionType: String? = "Race",
+        route: @escaping (F1PredictorSession) -> Void,
+        isSelectable: Bool,
+        selectableOptions: [String : [(title: String, onSelect: (F1PredictorSession) -> Void)]]
+    ) {
+        self.init(title: title, sessionType: sessionType, route: route)
+        self.isSelectable = isSelectable
+        self.selectableOptions = selectableOptions
+    }
+    
+    init(
+        title: String = "2026 Season",
+        sessionType: [String],
+        route: @escaping (F1PredictorSession) -> Void,
+        isSelectable: Bool,
+        selectableOptions: [String : [(title: String, onSelect: (F1PredictorSession) -> Void)]]
+    ) {
+        self.title = title
+        self.route = route
+        self.isSelectable = isSelectable
+        self.selectableOptions = selectableOptions
+        _viewModel = StateObject(wrappedValue: SessionPickerViewModel(sessionType: sessionType))
+    }
 
     var body: some View {
         SessionPickerContent(
@@ -46,7 +75,9 @@ struct SessionPickerView: View {
             error: viewModel.error,
             errorFootnote: "Note: Data not available during live sessions due to OpenF1 restrictions",
             onRetry: { Task { await viewModel.load() } },
-            onSelect: route
+            onSelect: route,
+            isSelectable: isSelectable,
+            selectableOptions: selectableOptions
         )
         .task { await viewModel.load() }
     }

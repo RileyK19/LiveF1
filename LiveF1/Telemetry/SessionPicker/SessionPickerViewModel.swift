@@ -17,9 +17,17 @@ class SessionPickerViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var error: String?
 
-    let sessionType: String?
+    let sessionType: [String]
 
     init(sessionType: String? = "Race") { // default preserves old behavior
+        if let sessionType = sessionType {
+            self.sessionType = [sessionType]
+        } else {
+            self.sessionType = []
+        }
+    }
+    
+    init(sessionType: [String]) {
         self.sessionType = sessionType
     }
 
@@ -27,8 +35,15 @@ class SessionPickerViewModel: ObservableObject {
         isLoading = true
         error = nil
         do {
-            let fetched = try await F1PredictorSessionParser.fetchRacesWithLaps(year: 2026, sessionType: sessionType)
-            sessions = fetched.sortedByDate
+            if sessionType.count > 1 {
+                let fetched = try await F1PredictorSessionParser.fetchRacesWithLaps(year: 2026, sessionType: nil)
+                sessions = fetched
+                    .filter { sessionType.contains($0.sessionType) }
+                    .sortedByDate
+            } else if !sessionType.isEmpty {
+                let fetched = try await F1PredictorSessionParser.fetchRacesWithLaps(year: 2026, sessionType: sessionType[0])
+                sessions = fetched.sortedByDate
+            }
         } catch {
             self.error = error.localizedDescription
         }

@@ -1,0 +1,4 @@
+- offline support for during sessions, cache data
+- session picker view supporting dropdown selection + nav update
+- session stint summary ie median the lap times within 107% wrt tyre age and compound
+    -> with that maybe prediction for race? like compare strategies 

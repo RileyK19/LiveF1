@@ -36,9 +36,12 @@ struct SessionPickerContent<Item: PickableSession>: View {
     var searchPrompt: String = "Search country or circuit"
     let onRetry: () -> Void
     let onSelect: (Item) -> Void
+    var isSelectable: Bool = false
+    var selectableOptions: [String : [(title: String, onSelect: (Item) -> Void)]] = [:]
 
     @State private var searchText = ""
     @State private var selectedTypes: Set<String> = []   // empty = all
+    @State private var selectedItem: Item? = nil
 
     private var availableTypes: [String] {
         Array(Set(items.map(\.pickerTypeName))).sorted()
@@ -71,15 +74,34 @@ struct SessionPickerContent<Item: PickableSession>: View {
                 VStack(spacing: 0) {
                     if availableTypes.count > 1 { chipBar }
 
+                    let universalItems = selectableOptions["All"] ?? []
                     List(filteredItems) { item in
                         let isDisabled = item.pickerDisabledReason != nil
-                        Button {
-                            if !isDisabled { onSelect(item) }
-                        } label: {
-                            SessionRowContent(item: item)
+                        if isSelectable, !selectableOptions.isEmpty {
+                            Button {
+                                if !equate(selectedItem, item) {
+                                    selectedItem = item
+                                } else {
+                                    selectedItem = nil
+                                }
+                            } label: {
+                                SessionRowContent(
+                                    item: item,
+                                    selectedItem: $selectedItem,
+                                    selectableOptions: (selectableOptions[item.pickerTypeName] ?? []) + universalItems
+                                )
+                                .disabled(isDisabled)
+                            }
+                            .buttonStyle(.plain)
+                        } else {
+                            Button {
+                                if !isDisabled { onSelect(item) }
+                            } label: {
+                                SessionRowContent(item: item, selectedItem: $selectedItem)
+                            }
+                            .buttonStyle(.plain)
+                            .disabled(isDisabled)
                         }
-                        .buttonStyle(.plain)
-                        .disabled(isDisabled)
                     }
                     .listStyle(.insetGrouped)
                 }
@@ -120,12 +142,26 @@ struct SessionPickerContent<Item: PickableSession>: View {
         }
         .buttonStyle(.plain)
     }
+    
+    private func equate(_ rhs: Item?, _ lhs: Item?) -> Bool {
+        if let rhs = rhs, let lhs = lhs {
+            return rhs.id == lhs.id
+        } else {
+            return rhs == nil && lhs == nil
+        }
+    }
 }
 
 // MARK: - Row
 
 struct SessionRowContent<Item: PickableSession>: View {
     let item: Item
+    @Binding var selectedItem: Item?
+    var selectableOptions: [(title: String, onSelect: (Item) -> Void)] = []
+    
+    private var isSelected: Bool {
+        item.id == selectedItem?.id
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -160,6 +196,53 @@ struct SessionRowContent<Item: PickableSession>: View {
                     .font(.caption)
                     .foregroundStyle(.tertiary)
             }
+            
+//            if isSelected && !selectableOptions.isEmpty {
+//                VStack(spacing: 10) {
+//                    Divider()
+//
+//                    ForEach(selectableOptions.indices, id: \.self) { index in
+//                        let option = selectableOptions[index]
+//                        Button {
+//                            option.onSelect(item)
+//                        } label: {
+//                            Text(option.title)
+//                                .font(.subheadline.weight(.semibold))
+//                                .frame(maxWidth: .infinity)
+//                                .padding(.vertical, 10)
+//                                .background(sessionColor.opacity(0.15), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+//                                .overlay(
+//                                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+//                                        .strokeBorder(sessionColor.opacity(0.25), lineWidth: 1)
+//                                )
+//                                .foregroundStyle(sessionColor)
+//                        }
+//                        .buttonStyle(.plain)
+//                    }
+//                }
+//                .padding(.top, 6)
+//                .transition(.opacity)
+//            }
+            
+            if isSelected && !selectableOptions.isEmpty {
+                HStack(spacing: 8) {
+                    ForEach(selectableOptions.indices, id: \.self) { index in
+                        Button {
+                            selectableOptions[index].onSelect(item)
+                        } label: {
+                            HStack(spacing: 4) {
+                                Text(selectableOptions[index].title)
+                                    .lineLimit(1)
+                                Image(systemName: "chevron.right")
+                                    .font(.system(size: 9, weight: .bold))
+                            }
+                        }
+                        .buttonStyle(SessionOptionButtonStyle(color: sessionColor))
+                    }
+                }
+                .padding(.top, 6)
+                .transition(.opacity.combined(with: .move(edge: .top)))
+            }
         }
         .padding(.vertical, 4)
         .opacity(item.pickerDisabledReason == nil ? 1 : 0.4)
@@ -173,5 +256,22 @@ struct SessionRowContent<Item: PickableSession>: View {
         case "Sprint Qualifying", "Sprint Shootout": return .purple
         default: return .secondary // Practice 1/2/3, etc.
         }
+    }
+}
+
+private struct SessionOptionButtonStyle: ButtonStyle {
+    let color: Color
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.footnote.weight(.semibold))
+            .foregroundStyle(color)
+            .padding(.vertical, 8)
+            .frame(maxWidth: .infinity)
+            .background(
+                color.opacity(configuration.isPressed ? 0.25 : 0.12),
+                in: RoundedRectangle(cornerRadius: 10, style: .continuous)
+            )
+            .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
     }
 }
