@@ -41,15 +41,26 @@ class MultiRaceViewModel: ObservableObject, Equatable, Hashable {
             self.wrapped.append(RaceViewModel(session: s))
         }
     }
+    
+    convenience init(session: MultiF1PredictorSession) {
+        self.init(sessions: session.sessions)
+    }
 
     func load() async {
-        await withTaskGroup { group in
-            for VM in wrapped {
-                group.addTask {
-                    await VM.load()
-                }
+        isLoading = true
+        for vm in wrapped {
+            await vm.load()
+
+            var attempts = 0
+            while vm.error != nil && attempts < 3 {
+                attempts += 1
+                try? await Task.sleep(nanoseconds: UInt64(attempts) * 700_000_000)  // 0.7s, 1.4s, 2.1s
+                await vm.load()
             }
+
+            try? await Task.sleep(nanoseconds: 300_000_000)   // breathing room between sessions
         }
+        isLoading = false
     }
 
     var drivers: [Int] {

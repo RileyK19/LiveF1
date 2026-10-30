@@ -22,14 +22,33 @@ extension F1PredictorSession: PickableSession {
     }
 }
 
+struct MultiF1PredictorSession: PickableSession, Equatable, Hashable {
+    var id: Int { sessions.flatMap { $0.id }.reduce(0) { $0 * 100 + $1 } }
+    
+    var sessions: [F1PredictorSession]
+    var pickerTitle: String { sessions[0].countryName }
+    var pickerSubtitle: String { sessions[0].circuitShortName }
+    var pickerTypeName: String {     sessions.count > 1 ? sessions[0].sessionType : sessions[0].sessionName }
+    var pickerDate: Date? { sessions.flatMap{ $0.dateStart }.sorted().first }
+    var pickerSearchStrings: [String] { sessions.flatMap { [$0.countryName] + [$0.circuitShortName] } }
+
+    var pickerDisabledReason: String? {
+        guard !sessions.contains(where: { $0.hasLaps }) else { return nil }
+        if let pickerDate, pickerDate >= .now { return "In future" }
+        if sessions.allSatisfy({ session in session.isCancelled }) { return "Cancelled" }
+        return "Unavailable"
+    }
+}
+
 struct SessionPickerView: View {
     @StateObject private var viewModel: SessionPickerViewModel
     
     var isSelectable: Bool = false
-    var selectableOptions: [String : [(title: String, onSelect: (F1PredictorSession) -> Void)]] = [:]
+    var selectableOptions: [String : [(title: String, onSelect: (MultiF1PredictorSession) -> Void)]] = [:]
 
     let title: String
-    let route: (F1PredictorSession) -> Void
+    let route: (MultiF1PredictorSession) -> Void
+    var groupBy: [String] = []
 
     init(
         title: String = "2026 Season",
@@ -37,7 +56,11 @@ struct SessionPickerView: View {
         route: @escaping (F1PredictorSession) -> Void
     ) {
         self.title = title
-        self.route = route
+        self.route = { (fullSession: MultiF1PredictorSession) -> Void in
+            for session in fullSession.sessions {
+                route(session)
+            }
+        }
         _viewModel = StateObject(wrappedValue: SessionPickerViewModel(sessionType: sessionType))
     }
     
@@ -50,7 +73,14 @@ struct SessionPickerView: View {
     ) {
         self.init(title: title, sessionType: sessionType, route: route)
         self.isSelectable = isSelectable
-        self.selectableOptions = selectableOptions
+        self.selectableOptions = selectableOptions.mapValues { options in
+            options.map { option in
+                (title: option.title,
+                 onSelect: { (group: MultiF1PredictorSession) in
+                     option.onSelect(group.sessions[0])
+                 })
+            }
+        }
     }
     
     init(
@@ -61,14 +91,41 @@ struct SessionPickerView: View {
         selectableOptions: [String : [(title: String, onSelect: (F1PredictorSession) -> Void)]]
     ) {
         self.title = title
+        self.route = { (fullSession: MultiF1PredictorSession) -> Void in
+            for session in fullSession.sessions {
+                route(session)
+            }
+        }
+        self.isSelectable = isSelectable
+        self.selectableOptions = selectableOptions.mapValues { options in
+            options.map { option in
+                (title: option.title,
+                 onSelect: { (group: MultiF1PredictorSession) in
+                     option.onSelect(group.sessions[0])
+                 })
+            }
+        }
+        _viewModel = StateObject(wrappedValue: SessionPickerViewModel(sessionType: sessionType))
+    }
+    
+    init(
+        title: String = "2026 Season",
+        sessionType: [String],
+        route: @escaping (MultiF1PredictorSession) -> Void,
+        isSelectable: Bool,
+        selectableOptions: [String : [(title: String, onSelect: (MultiF1PredictorSession) -> Void)]],
+        groupBy: [String]
+    ) {
+        self.title = title
         self.route = route
         self.isSelectable = isSelectable
         self.selectableOptions = selectableOptions
-        _viewModel = StateObject(wrappedValue: SessionPickerViewModel(sessionType: sessionType))
+        self.groupBy = groupBy
+        _viewModel = StateObject(wrappedValue: SessionPickerViewModel(sessionType: sessionType, groupBy: groupBy))
     }
 
     var body: some View {
-        SessionPickerContent(
+        SessionPickerContent<MultiF1PredictorSession>(
             title: title,
             items: viewModel.sessions,
             isLoading: viewModel.isLoading,

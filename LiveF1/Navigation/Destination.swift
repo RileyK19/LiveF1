@@ -36,7 +36,7 @@ enum Destination: Hashable {
     case replayLapPicker(F1PredictorSession)
     case appAssistant(CurrentSessionStore, ChampionshipDataStore, FIADocumentStore)
     case raceResults(ChampionshipPickerSession, ChampionshipDataStore)
-    case sessionSummary(F1PredictorSession)
+    case sessionSummary(MultiF1PredictorSession)
 }
 
 enum SessionDestination: Hashable {

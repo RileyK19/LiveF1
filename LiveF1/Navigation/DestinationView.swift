@@ -100,12 +100,13 @@ struct DestinationView: View {
                     isSelectable: true,
                     selectableOptions: [
                         "Race": [(title: "Detail", onSelect: { session in
-                            router.push(.raceDetail(session))
+                            router.push(.raceDetail(session.sessions[0]))
                         })],
                         "All": [(title: "Summary", onSelect: { session in
                             router.push(.sessionSummary(session))
                         })]
-                    ]
+                    ],
+                    groupBy: ["Practice"]
                 )
             case SessionDestination.replayLapPicker:
                 SessionPickerView(route: { session in
@@ -163,7 +164,7 @@ struct DestinationView: View {
             ChampionshipResultsView(session: session)
                 .environment(store)
         case .sessionSummary(let session):
-            SessionSummaryView(session: session)
+            SessionSummaryView(session: [session])
         }
     }
 }
