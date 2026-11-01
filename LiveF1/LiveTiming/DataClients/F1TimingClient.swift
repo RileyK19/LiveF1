@@ -10,19 +10,40 @@ import Foundation
 import Compression
 import Combine
 
-final class WebsocketConnection {
-    static var webSocketTask: URLSessionWebSocketTask?
+//final class WebsocketConnection {
+//    static var webSocketTask: URLSessionWebSocketTask?
+//}
+
+final class F1SocketDelegate: NSObject, URLSessionWebSocketDelegate, Sendable {
+    let continuation: AsyncStream<F1LiveEvent>.Continuation
+
+    init(continuation: AsyncStream<F1LiveEvent>.Continuation) {
+        self.continuation = continuation
+    }
+
+    func urlSession(_ session: URLSession,
+                    webSocketTask: URLSessionWebSocketTask,
+                    didCloseWith closeCode: URLSessionWebSocketTask.CloseCode,
+                    reason: Data?) {
+        continuation.yield(.state(.disconnected))
+    }
 }
 
-class F1TimingClient: NSObject, F1DataSource, ObservableObject {
-    var onMessage: ((String, [String: Any]) -> Void)?
-    var onStateChange: ((DataSourceState) -> Void)?
+actor F1TimingClient: F1DataSource {
+//    var onMessage: ((String, [String: Any]) -> Void)?
+//    var onStateChange: ((DataSourceState) -> Void)?
+    
+    let (stream, continuation) = AsyncStream.makeStream(of: F1LiveEvent.self)
+    
+    private var receiveTask: Task<Void, Never>?
+    private var task: URLSessionWebSocketTask?
 
 //    private var webSocketTask: URLSessionWebSocketTask?
     private var urlSession: URLSession!
     private(set) var currentToken: String?
     
-    private var pingTimer: Timer?
+//    private var pingTimer: Timer?
+    private var pingTask: Task<Void, Never>?
 
     private let topics = [
         "Heartbeat", "CarData.z", "Position.z", "ExtrapolatedClock",
@@ -32,15 +53,25 @@ class F1TimingClient: NSObject, F1DataSource, ObservableObject {
         "SessionStatus"
     ]
 
-    override init() {
-        super.init()
-        urlSession = URLSession(configuration: .default, delegate: self, delegateQueue: nil)
+//    init() {
+//        urlSession = URLSession(configuration: .default, delegate: self, delegateQueue: nil)
+//    }
+    init() {
+        let delegate = F1SocketDelegate(continuation: continuation)
+        urlSession = URLSession(configuration: .default, delegate: delegate, delegateQueue: nil)
+    }
+    
+    deinit {
+        continuation.finish()
+        urlSession.invalidateAndCancel()
     }
 
     func connect(token: String?) async {
+        guard task == nil else { return }
         currentToken = token
         print("🚀 connect called, token nil: \(token == nil)")
-        onStateChange?(.connecting)
+//        onStateChange?(.connecting)
+        continuation.yield(.state(.connecting))
         do {
             let (connectionId, connectionToken) = try await negotiate(token: token)
             try await openWebSocket(token: token, connectionId: connectionId, connectionToken: connectionToken)
@@ -49,31 +80,57 @@ class F1TimingClient: NSObject, F1DataSource, ObservableObject {
             print("🔌 sending subscribe")
             try await subscribe()
             print("🔌 done")
-            onStateChange?(.connected)
-            receiveLoop()
+//            onStateChange?(.connected)
+            continuation.yield(.state(.connected))
+//            receiveLoop()
+            guard let task = task else { return }
+            startRecieving(on: task)
             
-            await MainActor.run {
-                pingTimer = Timer.scheduledTimer(withTimeInterval: 10, repeats: true) { [weak self] _ in
-//                    self?.webSocketTask?.sendPing { error in
-                    WebsocketConnection.webSocketTask?.sendPing { error in
-                        if let error {
-                            print("❌ ping failed: \(error)")
-                        } else {
-                            print("✅ ping ok")
+//            await MainActor.run {
+//                pingTimer = Timer.scheduledTimer(withTimeInterval: 10, repeats: true) { [weak self] _ in
+////                    self?.webSocketTask?.sendPing { error in
+//                    WebsocketConnection.webSocketTask?.sendPing { error in
+//                        if let error {
+//                            print("❌ ping failed: \(error)")
+//                        } else {
+//                            print("✅ ping ok")
+//                        }
+//                    }
+//                }
+//            }
+            pingTask = Task {
+                while !Task.isCancelled {
+                    do {
+                        task.sendPing {error in
+                            if let error {
+                                print("❌ ping failed: \(error)")
+                            } else {
+//                                print("✅ ping ok")
+                            }
                         }
+                        try await Task.sleep(for: .seconds(1))
+                    } catch {
+                        break
                     }
                 }
             }
         } catch {
-            onStateChange?(.error(error.localizedDescription))
+//            onStateChange?(.error(error.localizedDescription))
+            continuation.yield(.state(.error(error.localizedDescription)))
+            task = nil
         }
     }
 
     func disconnect() {
-        pingTimer?.invalidate()
-        pingTimer = nil
-        WebsocketConnection.webSocketTask?.cancel(with: .normalClosure, reason: nil)
-        onStateChange?(.disconnected)
+//        pingTimer?.invalidate()
+//        pingTimer = nil
+        pingTask?.cancel()
+//        WebsocketConnection.webSocketTask?.cancel(with: .normalClosure, reason: nil)
+        task?.cancel(with: .normalClosure, reason: nil)
+//        onStateChange?(.disconnected)
+        continuation.yield(.state(.disconnected))
+//        continuation.finish()
+        task = nil
     }
 
     private func negotiate(token: String?) async throws -> (id: String, token: String) {
@@ -96,51 +153,75 @@ class F1TimingClient: NSObject, F1DataSource, ObservableObject {
             req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
         req.setValue("https://livetiming.formula1.com", forHTTPHeaderField: "Origin")
-        WebsocketConnection.webSocketTask = urlSession.webSocketTask(with: req)
+//        WebsocketConnection.webSocketTask = urlSession.webSocketTask(with: req)
+        task = urlSession.webSocketTask(with: req)
         print("🔌 ws resume")
-        WebsocketConnection.webSocketTask?.resume()
+//        WebsocketConnection.webSocketTask?.resume()
+        task?.resume()
         print("🔌 ws resumed")
         try await Task.sleep(nanoseconds: 500_000_000)
         print("🔌 ws after sleep")
     }
     
     private func sendHandshake() async throws {
-        try await WebsocketConnection.webSocketTask?.send(.string(#"{"protocol":"json","version":1}"# + "\u{1e}"))
+//        try await WebsocketConnection.webSocketTask?.send(.string(#"{"protocol":"json","version":1}"# + "\u{1e}"))
+        try await task?.send(.string(#"{"protocol":"json","version":1}"# + "\u{1e}"))
     }
 
     private func subscribe() async throws {
         let msg: [String: Any] = ["type": 1, "invocationId": "0", "target": "Subscribe", "arguments": [topics]]
         let text = String(data: try JSONSerialization.data(withJSONObject: msg), encoding: .utf8)! + "\u{1e}"
-        try await WebsocketConnection.webSocketTask?.send(.string(text))
+//        try await WebsocketConnection.webSocketTask?.send(.string(text))
+        try await task?.send(.string(text))
     }
-
-    private func receiveLoop() {
-        WebsocketConnection.webSocketTask?.receive { [weak self] result in
-            switch result {
-            case .success(let msg):
-                if case .string(let text) = msg { self?.processText(text) }
-                else if case .data(let data) = msg, let text = String(data: data, encoding: .utf8) { self?.processText(text) }
-                self?.receiveLoop()
-            case .failure(let error):
-                print("❌ ws error: \(error.localizedDescription)")
-                self?.onStateChange?(.error(error.localizedDescription))
+    
+    private func startRecieving(on task: URLSessionWebSocketTask) {
+        receiveTask = Task {
+            while !Task.isCancelled {
+                do {
+                    let msg = try await task.receive()
+                    if case .string(let text) = msg { await processText(text) }
+                    else if case .data(let data) = msg, let text = String(data: data, encoding: .utf8) { await processText(text) }
+                } catch {
+                    if !Task.isCancelled {
+                        continuation.yield(.state(.error(error.localizedDescription)))
+                    }
+                    break
+                }
             }
         }
     }
 
-    private func processText(_ text: String) {
+//    private func receiveLoop() {
+////        WebsocketConnection.webSocketTask?.receive { [weak self] result in
+//        task?.receive { [weak self] result in
+//            switch result {
+//            case .success(let msg):
+//                if case .string(let text) = msg { self?.processText(text) }
+//                else if case .data(let data) = msg, let text = String(data: data, encoding: .utf8) { self?.processText(text) }
+//                self?.receiveLoop()
+//            case .failure(let error):
+//                print("❌ ws error: \(error.localizedDescription)")
+////                self?.onStateChange?(.error(error.localizedDescription))
+//                self?.continuation.yield(.state(.error(error.localizedDescription)))
+//            }
+//        }
+//    }
+
+    private func processText(_ text: String) async {
         for frame in text.components(separatedBy: "\u{1e}").filter({ !$0.isEmpty }) {
-            processFrame(frame)
+            await processFrame(frame)
         }
     }
 
-    private func processFrame(_ text: String) {
+    private func processFrame(_ text: String) async {
         guard let data = text.data(using: .utf8),
               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               let type = json["type"] as? Int else { return }
 
         if type == 6 {
-            WebsocketConnection.webSocketTask?.send(.string(#"{"type":6}"# + "\u{1e}")) { _ in }
+//            WebsocketConnection.webSocketTask?.send(.string(#"{"type":6}"# + "\u{1e}")) { _ in }
+            try? await task?.send(.string(#"{"type":6}"# + "\u{1e}"))
             return
         }
 
@@ -150,7 +231,8 @@ class F1TimingClient: NSObject, F1DataSource, ObservableObject {
                     if topic.hasSuffix(".z") {
                         if let b64 = extractBase64(payload) {
                             if let decompressed = decompress(b64) {
-                                onMessage?(topic, decompressed)
+//                                onMessage?(topic, decompressed)
+                                continuation.yield(.message(topic: topic, payload: decompressed))
                             } else {
                                 print("   ❌ decompress failed")
                             }
@@ -158,7 +240,8 @@ class F1TimingClient: NSObject, F1DataSource, ObservableObject {
                             print("   ❌ extractBase64 failed")
                         }
                     } else if let p = payload as? [String: Any] {
-                        onMessage?(topic, p)
+//                        onMessage?(topic, p)
+                        continuation.yield(.message(topic: topic, payload: p))
                     }
                 }
             }
@@ -175,12 +258,14 @@ class F1TimingClient: NSObject, F1DataSource, ObservableObject {
         if topicName.hasSuffix(".z") {
             if let b64 = extractBase64(args[1]),
                let decompressed = decompress(b64) {
-                onMessage?(topicName, decompressed)
+//                onMessage?(topicName, decompressed)
+                continuation.yield(.message(topic: topicName, payload: decompressed))
             } else {
                 print("❌ failed to decompress \(topicName)")
             }
         } else if let payload = args[1] as? [String: Any] {
-            onMessage?(topicName, payload)
+//            onMessage?(topicName, payload)
+            continuation.yield(.message(topic: topicName, payload: payload))
         }
     }
 
@@ -223,14 +308,15 @@ class F1TimingClient: NSObject, F1DataSource, ObservableObject {
         return nil
     }
 }
-
-extension F1TimingClient: URLSessionWebSocketDelegate {
-    nonisolated func urlSession(_ session: URLSession, webSocketTask: URLSessionWebSocketTask,
-                                didCloseWith closeCode: URLSessionWebSocketTask.CloseCode, reason: Data?) {
-        print("🔴 WebSocket closed: \(closeCode.rawValue)")
-        onStateChange?(.disconnected)
-    }
-}
+//
+//extension F1TimingClient: URLSessionWebSocketDelegate {
+//    nonisolated func urlSession(_ session: URLSession, webSocketTask: URLSessionWebSocketTask,
+//                                didCloseWith closeCode: URLSessionWebSocketTask.CloseCode, reason: Data?) {
+//        print("🔴 WebSocket closed: \(closeCode.rawValue)")
+////        onStateChange?(.disconnected)
+//        continuation.yield(.state(.disconnected))
+//    }
+//}
 
 enum F1ClientError: LocalizedError {
     case negotiationFailed

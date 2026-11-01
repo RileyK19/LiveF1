@@ -82,31 +82,65 @@ final class F1SessionStore: Hashable {
         hasher.combine(id)
     }
     
-    var dataSource: (any F1DataSource)? {
+    var dataSource: (any F1DataSource)?{
         didSet {
-            dataSource?.onMessage = { [weak self] topic, payload in
-                Task { @MainActor in
-                    self?.enqueue(topic: topic, payload: payload)
-                }
-            }
-//            dataSource?.onStateChange = { [weak self] state in
-//                Task { @MainActor in
-//                    self?.connectionState = state
-//                }
-//            }
-            dataSource?.onStateChange = { [weak self] state in
-                Task { @MainActor in
-                    self?.connectionState = state
-                    if case .connected = state {
-                        let sessionName = (self?.rawTopics["SessionInfo"] as? [String: Any])?["Name"] as? String ?? "Session"
-                        LiveActivityManager.shared.start(sessionName: sessionName)
-                    } else if case .disconnected = state {
-                        LiveActivityManager.shared.end()
+            consumerTask?.cancel()
+            consumerTask = nil
+            guard let stream = dataSource?.stream else { return }
+            consumerTask = Task { [ weak self ] in
+                for await event in stream {
+                    guard let self else { return }
+                    if case .message(let topic, let payload) = event {
+                        self.enqueue(topic: topic, payload: payload)
+                    } else if case .state(let state) = event {
+                        self.connectionState = state
+                        if case .connected = state {
+                            let sessionName = (self.rawTopics["SessionInfo"] as? [String: Any])?["Name"] as? String ?? "Session"
+                            LiveActivityManager.shared.start(sessionName: sessionName)
+                        } else if case .disconnected = state {
+                            LiveActivityManager.shared.end()
+                        } else if case .error(let str) = state {
+                            LiveActivityManager.shared.end()
+                        }
                     }
                 }
             }
+            // DEBUG
+//            let sessionName = (self.rawTopics["SessionInfo"] as? [String: Any])?["Name"] as? String ?? "Session"
+//            LiveActivityManager.shared.start(sessionName: sessionName)
         }
     }
+    
+    private var consumerTask: Task<Void, Never>?
+    
+    private var whisperLoadTask: Task<Void, Never>?
+
+    
+//    var dataSource: (any F1DataSource)? {
+//        didSet {
+//            dataSource?.onMessage = { [weak self] topic, payload in
+//                Task { @MainActor in
+//                    self?.enqueue(topic: topic, payload: payload)
+//                }
+//            }
+////            dataSource?.onStateChange = { [weak self] state in
+////                Task { @MainActor in
+////                    self?.connectionState = state
+////                }
+////            }
+//            dataSource?.onStateChange = { [weak self] state in
+//                Task { @MainActor in
+//                    self?.connectionState = state
+//                    if case .connected = state {
+//                        let sessionName = (self?.rawTopics["SessionInfo"] as? [String: Any])?["Name"] as? String ?? "Session"
+//                        LiveActivityManager.shared.start(sessionName: sessionName)
+//                    } else if case .disconnected = state {
+//                        LiveActivityManager.shared.end()
+//                    }
+//                }
+//            }
+//        }
+//    }
         
     enum LogEntry: Identifiable {
         case radio(RadioMessage)
@@ -181,6 +215,8 @@ final class F1SessionStore: Hashable {
         pendingPositions = [:]
         headerDirty = false
         header = SessionHeader()
+        consumerTask?.cancel()
+        consumerTask = nil
     }
     
     private func handle(topic: String, payload: [String: Any]) {
@@ -407,44 +443,108 @@ final class F1SessionStore: Hashable {
         transcribeWithRetry(msg, retries: 3)
     }
 
+//    private func loadWhisperIfNeeded() async {
+//        guard whisperPipe == nil else { return }
+//        whisperPipe = try? await WhisperKit(model: "small.en") 
+//    }
     private func loadWhisperIfNeeded() async {
-        guard whisperPipe == nil else { return }
-        whisperPipe = try? await WhisperKit(model: "small.en") 
+        if let pipe = whisperPipe, pipe.tokenizer != nil { return }
+
+        if whisperLoadTask == nil {
+            whisperLoadTask = Task { @MainActor in
+                do {
+//                    print("⏳ loading WhisperKit...")
+                    let config = WhisperKitConfig(
+                        model: "openai_whisper-base.en",   // full variant name, avoids glob ambiguity
+                        verbose: true,
+                        logLevel: .error
+                    )
+                    let pipe = try await WhisperKit(config)
+//                    print("📦 state: \(pipe.modelState), tokenizer nil? \(pipe.tokenizer == nil)")
+
+                    if pipe.tokenizer == nil || pipe.modelState != .loaded {
+//                        print("🔁 forcing loadModels()")
+                        try await pipe.loadModels()
+//                        print("📦 after: state \(pipe.modelState), tokenizer nil? \(pipe.tokenizer == nil)")
+                    }
+
+                    if pipe.tokenizer != nil {
+                        self.whisperPipe = pipe
+//                        print("✅ ready")
+                    } else {
+//                        print("❌ tokenizer still nil")
+                    }
+                } catch {
+//                    print("❌ WhisperKit load failed: \(error)")
+                }
+            }
+        }
+
+        await whisperLoadTask?.value
+        whisperLoadTask = nil   // always clear; the check at the top decides whether to retry
     }
 
+    private let prompt = "Formula 1 team radio. Box box, box this lap. Overtake mode, boost mode, "
+               + "straight mode, corner mode, lift and coast, undercut, overcut, "
+               + "graining, blistering, dirty air, safety car, VSC, "
+               + "softs, mediums, hards, inters, wets, delta. "
+               + "Verstappen, Hadjar, Hamilton, Leclerc, Norris, Piastri, Russell, Antonelli, "
+               + "Alonso, Stroll, Gasly, Colapinto, Lawson, Lindblad, Hülkenberg, Bortoleto, "
+               + "Ocon, Bearman, Albon, Sainz, Bottas, Perez."
+    
     private func transcribeWithRetry(_ msg: RadioMessage, retries: Int) {
         guard let url = msg.audioURL else {
+//            print("⚠️ no audioURL for \(msg.id)")
             processTranscriptionQueue()
             return
         }
         Task {
             await loadWhisperIfNeeded()
-            guard let (localURL, _) = try? await URLSession.shared.download(from: url) else {
-//                await MainActor.run { processTranscriptionQueue() }
+
+            // 1. Download + validate
+            let localURL: URL
+            do {
+                let (downloaded, response) = try await URLSession.shared.download(from: url)
+                if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
+                    throw URLError(.badServerResponse, userInfo: [NSLocalizedDescriptionKey: "HTTP \(http.statusCode)"])
+                }
+                localURL = downloaded
+            } catch {
+//                print("⚠️ download failed (\(retries) left): \(error)")
                 if retries > 0 {
                     try? await Task.sleep(nanoseconds: 2_000_000_000)
                     transcribeWithRetry(msg, retries: retries - 1)
                 } else {
-                    processTranscriptionQueue()
+                    await MainActor.run { self.processTranscriptionQueue() }
                 }
                 return
             }
+
             let tempURL = FileManager.default.temporaryDirectory
                 .appendingPathComponent(UUID().uuidString + ".mp3")
-            try? FileManager.default.moveItem(at: localURL, to: tempURL)
+            defer { try? FileManager.default.removeItem(at: tempURL) }
 
-            guard let tokenizer = whisperPipe?.tokenizer else { return }
+            do {
+                try FileManager.default.moveItem(at: localURL, to: tempURL)
+                let size = (try? FileManager.default.attributesOfItem(atPath: tempURL.path)[.size]) ?? "?"
+//                print("📥 downloaded \(size) bytes")
+            } catch {
+//                print("⚠️ move failed: \(error)")
+                await MainActor.run { self.processTranscriptionQueue() }
+                return
+            }
 
-            let prompt = "Formula 1 team radio. Box box, box this lap. Overtake mode, boost mode, "
-                       + "straight mode, corner mode, lift and coast, undercut, overcut, "
-                       + "graining, blistering, dirty air, safety car, VSC, "
-                       + "softs, mediums, hards, inters, wets, delta. "
-                       + "Verstappen, Hadjar, Hamilton, Leclerc, Norris, Piastri, Russell, Antonelli, "
-                       + "Alonso, Stroll, Gasly, Colapinto, Lawson, Lindblad, Hülkenberg, Bortoleto, "
-                       + "Ocon, Bearman, Albon, Sainz, Bottas, Perez."
+            // 2. Don't stall the queue if the model isn't ready
+            await whisperLoadTask?.value
+            guard let pipe = whisperPipe, let tokenizer = pipe.tokenizer else {
+//                print("⚠️ whisperPipe or tokenizer is nil - model not loaded")
+                await MainActor.run { self.processTranscriptionQueue() }
+                return
+            }
 
             let promptTokens = tokenizer.encode(text: " " + prompt)
                 .filter { $0 < tokenizer.specialTokens.specialTokenBegin }
+//            print("🔤 prompt tokens: \(promptTokens.count)")
 
             let options = DecodingOptions(
                 language: "en",
@@ -454,19 +554,20 @@ final class F1SessionStore: Hashable {
                 promptTokens: promptTokens
             )
 
-            let result = try? await whisperPipe?.transcribe(
-                audioPath: tempURL.path,
-                decodeOptions: options
-            )
-            try? FileManager.default.removeItem(at: tempURL)
+            // 3. Surface transcribe errors
+            var text = ""
+            do {
+                let results = try await pipe.transcribe(audioPath: tempURL.path, decodeOptions: options)
+                text = results.map(\.text).joined().trimmingCharacters(in: .whitespacesAndNewlines)
+//                print("📝 result: '\(text)'")
+            } catch {
+//                print("❌ transcribe error: \(error)")
+            }
 
             await MainActor.run {
-                if let segments = result,
+                if !text.isEmpty,
                    let i = self.radioMessages.firstIndex(where: { $0.id == msg.id }) {
-                    let fullText = segments.map(\.text).joined()
-                    if !fullText.isEmpty {
-                        self.radioMessages[i].transcription = fullText
-                    }
+                    self.radioMessages[i].transcription = text
                 }
                 self.processTranscriptionQueue()
             }

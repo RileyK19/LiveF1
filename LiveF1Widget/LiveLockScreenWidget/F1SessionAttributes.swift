@@ -18,6 +18,9 @@ struct F1SessionAttributes: ActivityAttributes {
         var p3Gap: String
         var trackStatus: String
         var lapCount: String
+        var p1BestLap: String
+        var p2BestLap: String
+        var p3BestLap: String
     }
 
     var sessionName: String  // "Race", "Qualifying", etc — set once at start

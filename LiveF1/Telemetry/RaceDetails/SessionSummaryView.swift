@@ -8,7 +8,7 @@ import Charts
 
 // MARK: - Tunables
 
-private enum Tuning {
+enum Tuning {
     static let minStintLaps = 5
     static let minKeptLaps = 3
     static let slowLapCut = 1.025
@@ -18,13 +18,13 @@ private enum Tuning {
 
 // MARK: - Model
 
-private struct StintLap: Identifiable {
+struct StintLap: Identifiable {
     var id: Int { age }
     let age: Int
     let time: Double   // fuel-corrected lap time
 }
 
-private struct StintSeries: Identifiable {
+struct StintSeries: Identifiable {
     let id: String
     let key: String        // "session-driver"
     let compound: String
@@ -54,7 +54,7 @@ private struct StintSeries: Identifiable {
     }
 }
 
-private struct CompoundSummary: Identifiable {
+struct CompoundSummary: Identifiable {
     var id: String { name }
     let name: String
     let offset: Double     // seconds vs each driver's best run (median across stints)
@@ -202,12 +202,17 @@ struct SessionSummaryView: View {
         .navigationTitle("Session Summary • \(viewModel.sessions[0].location)")
         .navigationBarTitleDisplayMode(.inline)
         .task { await viewModel.load() }
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                ExportMenu(source: self)
+            }
+        }
     }
 }
 
 // MARK: - Stint Chart
 
-private struct StintChart: View {
+struct StintChart: View {
     let stints: [StintSeries]
     let refs: [String: Double]
     
@@ -286,7 +291,7 @@ private struct StintChart: View {
 
 // MARK: - Summary Table
 
-private struct SummaryTable: View {
+struct SummaryTable: View {
     let rows: [CompoundSummary]
 
     var body: some View {
@@ -357,6 +362,26 @@ private struct SummaryTable: View {
             .frame(maxWidth: .infinity, alignment: .trailing)
     }
 }
+
+extension SessionSummaryView: Exportable {
+    var exportContent: some View {
+        let stints = buildStints()
+        let report = buildReport(stints)
+        let location = viewModel.sessions.first?.location ?? "Session"
+
+        return SessionSummaryExportLayout(
+            sessionName: "\(location) Grand Prix",
+            stints: stints,
+            refs: report.refs,
+            summary: report.summary
+        )
+    }
+
+    var exportFilename: String {
+        "SessionSummary-\(viewModel.sessions.first?.location ?? "Session")"
+    }
+}
+
 
 //import SwiftUI
 //import Charts

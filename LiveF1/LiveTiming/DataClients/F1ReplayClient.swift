@@ -259,9 +259,11 @@ enum ReplayPacing {
     case unpaced                   // as fast as the consumer accepts (benchmarks)
 }
 
-class F1ReplayClient: F1DataSource {
-    var onMessage: ((String, [String: Any]) -> Void)?
-    var onStateChange: ((DataSourceState) -> Void)?
+actor F1ReplayClient: F1DataSource {
+//    var onMessage: ((String, [String: Any]) -> Void)?
+//    var onStateChange: ((DataSourceState) -> Void)?
+    
+    let (stream, continuation) = AsyncStream.makeStream(of: F1LiveEvent.self, bufferingPolicy: .bufferingOldest(1000))
 
     var pacing: ReplayPacing = .realtime(speed: 10)
 
@@ -272,7 +274,8 @@ class F1ReplayClient: F1DataSource {
     /// Call this first when benchmarking so load cost isn't mixed into pipeline timings.
     @discardableResult
     func preload(sessionPath: String) async -> Int {
-        onStateChange?(.connecting)
+//        onStateChange?(.connecting)
+        continuation.yield(.state(.connecting))
         let result = await ReplayLoader.load(sessionPath: sessionPath)
         loaded = result
         return result.events.count
@@ -289,11 +292,13 @@ class F1ReplayClient: F1DataSource {
     func stop() {
         replayTask?.cancel()
         replayTask = nil
-        onStateChange?(.disconnected)
+//        onStateChange?(.disconnected)
+        continuation.yield(.state(.disconnected))
     }
 
     private func runReplay(sessionPath: String) async {
-        onStateChange?(.connecting)
+//        onStateChange?(.connecting)
+        continuation.yield(.state(.connecting))
 
         let normalized = ReplayLoader.normalize(sessionPath)
         let replay: LoadedReplay
@@ -308,10 +313,12 @@ class F1ReplayClient: F1DataSource {
         // Static snapshots first so the store has the driver list and session path.
         for frame in replay.keyframes {
             if let json = try? JSONSerialization.jsonObject(with: frame.body) as? [String: Any] {
-                onMessage?(frame.topic, json)
+                //                onMessage?(frame.topic, json)
+                guard await send(.message(topic: frame.topic, payload: json)) else { return }
             }
         }
-        onStateChange?(.connected)
+//        onStateChange?(.connected)
+        continuation.yield(.state(.connected))
 
         guard let first = replay.events.first else { return }
 
@@ -333,7 +340,23 @@ class F1ReplayClient: F1DataSource {
             }
 
             guard let payload = event.payload() else { continue }
-            onMessage?(event.topic, payload)
+//            onMessage?(event.topic, payload)
+            guard await send(.message(topic: event.topic, payload: payload)) else { return }
+        }
+        
+        continuation.yield(.state(.disconnected))
+    }
+    
+    private func send(_ event: F1LiveEvent) async -> Bool {
+        while true {
+            switch continuation.yield(event) {
+            case .enqueued: return true
+            case .terminated: return false
+            case .dropped:
+                do { try await Task.sleep(for: .milliseconds(2)) }
+                catch { return false }
+            @unknown default: return false
+            }
         }
     }
 }

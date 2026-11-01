@@ -4,77 +4,143 @@
 //
 //  Created by Riley Koo on 9/19/26.
 //
-
 import SwiftUI
 import WidgetKit
+
+// MARK: - Shared styling
+
+extension F1SessionAttributes.ContentState {
+    /// Short label + color for the current track status. Nil when there's nothing to show.
+    var statusStyle: (label: String, color: Color)? {
+        let s = trackStatus.lowercased()
+        guard !s.isEmpty else { return nil }
+        if s.contains("red") { return ("RED FLAG", .red) }
+        if s.contains("vsc") { return ("VSC", .yellow) }
+        if s.contains("safety") || s.contains("sc") && !s.contains("clear") { return ("SAFETY CAR", .orange) }
+        if s.contains("yellow") { return ("YELLOW", .yellow) }
+        if s.contains("green") || s.contains("clear") { return ("GREEN", .green) }
+        return (trackStatus.uppercased(), .gray)
+    }
+}
+
+enum Redline {
+    static let accent = Color(red: 0.90, green: 0.08, blue: 0.14)
+    static let background = Color(white: 0.06)
+}
+
+struct StatusPill: View {
+    let label: String
+    let color: Color
+
+    var body: some View {
+        HStack(spacing: 5) {
+            Circle()
+                .fill(color)
+                .frame(width: 6, height: 6)
+            Text(label)
+                .font(.system(size: 10, weight: .bold, design: .rounded))
+                .tracking(0.6)
+                .foregroundStyle(color)
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 3)
+        .background(color.opacity(0.16), in: Capsule())
+    }
+}
+
+struct DriverRow: View {
+    let position: Int
+    let tla: String
+    let gap: String
+    var isLeader: Bool = false
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Text("\(position)")
+                .font(.system(size: 12, weight: .heavy, design: .rounded))
+                .foregroundStyle(isLeader ? .white : .white.opacity(0.7))
+                .frame(width: 22, height: 22)
+                .background(
+                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        .fill(isLeader ? Redline.accent : Color.white.opacity(0.12))
+                )
+
+            Text(tla)
+                .font(.system(size: 20, weight: .bold, design: .rounded))
+                .foregroundStyle(.white)
+
+            Spacer(minLength: 8)
+
+            Text(gap)
+                .font(.system(size: isLeader && gap == "INTERVAL" ? 11 : 15, weight: isLeader && gap == "INTERVAL" ? .bold : .semibold, design: .rounded))
+                .tracking(isLeader ? 1 : 0)
+                .monospacedDigit()
+                .foregroundStyle(isLeader ? Redline.accent : .white.opacity(0.75))
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .background(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(isLeader ? Color.white.opacity(0.08) : Color.clear)
+        )
+    }
+}
+
+// MARK: - Lock screen
 
 struct LockScreenLiveActivityView: View {
     let state: F1SessionAttributes.ContentState
     let sessionName: String
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Label(sessionName, systemImage: "flag.checkered")
-                    .font(.system(size: 13, weight: .bold, design: .rounded))
-                Spacer()
-                if !state.trackStatus.isEmpty {
-                    Text(state.trackStatus)
-                        .font(.system(size: 11, weight: .semibold))
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 2)
-                        .background(trackStatusColor.opacity(0.2))
-                        .foregroundColor(trackStatusColor)
-                        .clipShape(Capsule())
-                }
-                if !state.lapCount.isEmpty {
-                    Text("Lap \(state.lapCount)")
-                        .font(.system(size: 11))
-                        .foregroundStyle(.secondary)
-                }
-            }
+        VStack(spacing: 10) {
+            header
 
-            Divider().opacity(0.3)
-
-            VStack(spacing: 6) {
-                driverRow(pos: 1, tla: state.leaderTLA, gap: "LEADER")
-                driverRow(pos: 2, tla: state.p2TLA, gap: state.p2Gap)
-                driverRow(pos: 3, tla: state.p3TLA, gap: state.p3Gap)
+            VStack(spacing: 2) {
+                if state.p2Gap != "", state.p3Gap != "" {
+                    DriverRow(position: 1, tla: state.leaderTLA, gap: "INTERVAL", isLeader: true)
+                    DriverRow(position: 2, tla: state.p2TLA, gap: state.p2Gap)
+                    DriverRow(position: 3, tla: state.p3TLA, gap: state.p3Gap)
+                } else {
+                    DriverRow(position: 1, tla: state.leaderTLA, gap: state.p1BestLap, isLeader: true)
+                    DriverRow(position: 2, tla: state.p2TLA, gap: state.p2BestLap)
+                    DriverRow(position: 3, tla: state.p3TLA, gap: state.p3BestLap)
+                }
             }
         }
-        .padding(16)
-        .activityBackgroundTint(Color.black)
-        .activitySystemActionForegroundColor(Color.white)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 14)
+        .frame(maxWidth: .infinity)
+        .background(Redline.background)            // solid fill, shows in preview and on device
+        .activityBackgroundTint(Redline.background) // keep this so the system tint matches
+        .activitySystemActionForegroundColor(.white)
     }
 
-    @ViewBuilder
-    private func driverRow(pos: Int, tla: String, gap: String) -> some View {
-        HStack {
-            Text("\(pos)")
-                .font(.system(size: 13, weight: .black, design: .rounded))
-                .frame(width: 18, alignment: .leading)
-                .foregroundStyle(.secondary)
+    private var header: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "flag.checkered")
+                .font(.system(size: 12, weight: .bold))
+                .foregroundStyle(Redline.accent)
 
-            Text(tla)
-                .font(.system(size: 15, weight: .bold, design: .rounded))
-                .frame(width: 50, alignment: .leading)
+            Text(sessionName.uppercased())
+                .font(.system(size: 12, weight: .heavy, design: .rounded))
+                .tracking(1.2)
+                .foregroundStyle(.white)
 
             Spacer()
 
-            Text(gap)
-                .font(.system(size: 13, weight: .medium, design: .rounded))
-                .foregroundStyle(pos == 1 ? .purple : .secondary)
-        }
-    }
+            if let status = state.statusStyle {
+                StatusPill(label: status.label, color: status.color)
+            }
 
-    private var trackStatusColor: Color {
-        switch state.trackStatus.lowercased() {
-        case let s where s.contains("green"): return .green
-        case let s where s.contains("yellow"): return .yellow
-        case let s where s.contains("red"): return .red
-        case let s where s.contains("safety"): return .orange
-        default: return .gray
+            if !state.lapCount.isEmpty {
+                Text("LAP \(state.lapCount)")
+                    .font(.system(size: 12, weight: .bold, design: .rounded))
+                    .monospacedDigit()
+                    .foregroundStyle(.white.opacity(0.6))
+            }
         }
+        .padding(.horizontal, 10)
     }
 }
 
@@ -89,6 +155,36 @@ struct LockScreenLiveActivityView: View {
         p3TLA: "LEC",
         p3Gap: "+5.812",
         trackStatus: "AllClear",
-        lapCount: "34"
+        lapCount: "34",
+        p1BestLap: "",
+        p2BestLap: "",
+        p3BestLap: ""
     )
+    F1SessionAttributes.ContentState(
+        leaderTLA: "VER",
+        leaderGap: "",
+        p2TLA: "NOR",
+        p2Gap: "+0.812",
+        p3TLA: "LEC",
+        p3Gap: "+1.204",
+        trackStatus: "SafetyCar",
+        lapCount: "41",
+        p1BestLap: "",
+        p2BestLap: "",
+        p3BestLap: ""
+    )
+    F1SessionAttributes.ContentState(
+        leaderTLA: "VER",
+        leaderGap: "",
+        p2TLA: "NOR",
+        p2Gap: "",
+        p3TLA: "LEC",
+        p3Gap: "",
+        trackStatus: "AllClear",
+        lapCount: "34",
+        p1BestLap: "1:29.759",
+        p2BestLap: "1:29.952",
+        p3BestLap: "1:30.001"
+    )
+
 }

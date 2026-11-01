@@ -325,16 +325,16 @@ struct LiveConnectView: View {
     }
 
     private func teardownReplay() {
-        replayClient?.onMessage = nil
-        replayClient?.onStateChange = nil
+//        replayClient?.onMessage = nil
+//        replayClient?.onStateChange = nil
         replayClient?.stop()
         replayClient = nil
         replaySession = nil
     }
 
     private func detachLive() {
-        liveClient?.onMessage = nil
-        liveClient?.onStateChange = nil
+//        liveClient?.onMessage = nil
+//        liveClient?.onStateChange = nil
         liveClient?.disconnect()
         liveClient = nil
     }

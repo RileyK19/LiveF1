@@ -37,7 +37,8 @@ final class LiveActivityManager {
         let attrs = F1SessionAttributes(sessionName: sessionName)
         let initialState = F1SessionAttributes.ContentState(
             leaderTLA: "—", leaderGap: "", p2TLA: "—", p2Gap: "",
-            p3TLA: "—", p3Gap: "", trackStatus: "", lapCount: ""
+            p3TLA: "—", p3Gap: "", trackStatus: "", lapCount: "",
+            p1BestLap: "", p2BestLap: "", p3BestLap: ""
         )
         do {
             activity = try Activity.request(
@@ -62,7 +63,10 @@ final class LiveActivityManager {
             leaderTLA: drivers[0].tla, leaderGap: drivers[0].gap,
             p2TLA: drivers[1].tla, p2Gap: drivers[1].interval,
             p3TLA: drivers[2].tla, p3Gap: drivers[2].interval,
-            trackStatus: trackStatus, lapCount: lapCount
+            trackStatus: trackStatus, lapCount: lapCount,
+            p1BestLap: drivers[0].bestLap,
+            p2BestLap: drivers[1].bestLap,
+            p3BestLap: drivers[2].bestLap,
         )
 
         // Skip entirely if nothing meaningful changed since the last push.
